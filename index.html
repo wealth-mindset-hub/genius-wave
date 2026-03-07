@@ -8,6 +8,10 @@
         body {
             font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
             background-color: #0f172a; 
+            /* 👇 أضفنا هذا السطر لاستخدام الصورة كخلفية */
+            background-image: url('brain_bg.png'); 
+            background-size: cover; /* لتغطية الشاشة بالكامل */
+            background-position: center; /* لتمركز الصورة */
             color: #f8fafc;
             display: flex;
             justify-content: center;
@@ -18,12 +22,13 @@
             padding: 20px;
         }
         .gradient-card {
-            background: linear-gradient(145deg, #1e293b, #0f172a);
+            background: rgba(15, 23, 42, 0.9); /* جعلنا البطاقة شبه شفافة لتظهر الخلفية */
             padding: 40px 30px;
             border-radius: 20px;
             box-shadow: 0 10px 40px rgba(0,0,0,0.6);
             max-width: 600px;
             border: 1px solid #334155;
+            backdrop-filter: blur(5px); /* إضافة تأثير ضبابي خفيف خلف البطاقة */
         }
         .pre-headline {
             color: #94a3b8;
