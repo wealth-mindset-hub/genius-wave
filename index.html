@@ -141,14 +141,13 @@
     </div>
 
     <footer>
-        <p>Copyright &copy; 2024 [YOUR DOMAIN NAME]. All Rights Reserved.</p>
+        <p>Copyright &copy; 2026 [YOUR DOMAIN NAME]. All Rights Reserved.</p>
         <p>
             <a href="privacy.html" target="_blank">Privacy Policy</a> | 
-            <a href="terms.html" target="_blank">Terms of Service</a> | 
-            <a href="#">Contact Us</a>
+            <a href="terms.html" target="_blank">Terms of Service</a>
         </p>
         <p style="max-width: 800px; margin: 10px auto 0; font-size: 10px; opacity: 0.7;">
-            Disclaimer: The information provided on this website is for educational purposes only. Results may vary. This site is not a part of the Facebook website or Facebook Inc. Additionally, This site is NOT endorsed by Facebook in any way. FACEBOOK is a trademark of FACEBOOK, Inc.
+            Disclaimer: The information provided on this website is for educational purposes only. Results may vary. This site is not a part of Pinterest. Additionally, This site is NOT endorsed by Pinterest in any way. PINTEREST is a trademark of Pinterest, Inc.
         </p>
     </footer>
 
@@ -160,7 +159,7 @@
         for (var i = 0; i < e.length; i++) {
             var ex = re.exec(e[i].href);
             if (ex) {
-                e[i].href = params.ctaSecureUrl.replace('%OFFER_NUMBER%', ex[1] || 1);
+                e[i].href = params.ctaSecureUrl.replace('%%OFFER_NUMBER%%', ex[1] || 1);
             }
         }
     }
