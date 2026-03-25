@@ -27,12 +27,20 @@
             color: var(--text-main);
             display: flex;
             flex-direction: column;
-            justify-content: center;
-            align-items: center;
-            min-height: 100vh;
+            min-height: 100vh; /* يضمن إن الصفحة تاخد طول الشاشة بالكامل */
             margin: 0;
             text-align: center;
+        }
+
+        /* حاوية جديدة لتوسيط المحتوى في كل الشاشات */
+        .content-wrapper {
+            flex: 1; /* تاخد كل المساحة المتاحة بين فوق والفوتر */
+            display: flex;
+            justify-content: center;
+            align-items: center;
             padding: 20px;
+            width: 100%;
+            box-sizing: border-box;
         }
 
         .gradient-card {
@@ -41,9 +49,10 @@
             border-radius: 15px;
             box-shadow: 0 10px 30px rgba(0, 0, 0, 0.7);
             max-width: 600px;
+            width: 100%; /* عشان يستجيب لحجم الموبايل */
             border-top: 4px solid var(--accent-purple);
             backdrop-filter: blur(8px);
-            margin-bottom: 40px;
+            box-sizing: border-box;
         }
 
         .pre-headline {
@@ -58,9 +67,9 @@
 
         h1 {
             color: var(--primary-gold);
-            font-size: clamp(28px, 5vw, 40px);
+            font-size: clamp(26px, 5vw, 40px);
             margin-bottom: 25px;
-            line-height: 1.2;
+            line-height: 1.25;
             text-shadow: 0 0 10px rgba(212, 175, 55, 0.3);
         }
 
@@ -90,6 +99,7 @@
             border: 2px solid transparent;
             box-shadow: 0 10px 20px rgba(142, 68, 173, 0.4);
             cursor: pointer;
+            box-sizing: border-box;
         }
 
         .cta-button:hover {
@@ -107,7 +117,6 @@
         }
 
         footer {
-            margin-top: auto;
             padding: 20px;
             font-size: 13px;
             color: var(--text-muted);
@@ -115,6 +124,7 @@
             border-top: 1px solid var(--border-dark);
             width: 100%;
             box-sizing: border-box;
+            z-index: 10;
         }
 
         footer a {
@@ -128,19 +138,42 @@
             color: var(--accent-purple);
             text-shadow: 0 0 8px rgba(142, 68, 173, 0.5);
         }
+
+        /* =========================================
+           تعديلات خاصة بالموبايل فقط (Mobile-First)
+           ========================================= */
+        @media (max-width: 480px) {
+            .gradient-card {
+                padding: 30px 20px; /* تقليل الحواف الداخلية عشان ندي مساحة للكلام */
+            }
+            p {
+                font-size: 17px; /* تصغير الخط سنة بسيطة عشان ميبقاش زحمة */
+                margin-bottom: 25px;
+            }
+            .cta-button {
+                width: 100%; /* الزرار ياخد العرض كله عشان يبقى سهل الضغط عليه */
+                padding: 18px 20px;
+                font-size: 20px;
+            }
+            footer p {
+                line-height: 1.8;
+            }
+        }
     </style>
 </head>
 <body>
 
-    <div class="gradient-card">
-        <span class="pre-headline">Backed by NASA Research</span>
-        <h1>Edison's 7-Second Brain Trick Activates Your Superbrain</h1>
-        <p>Discover the simple <span class="highlight">7-minute daily audio ritual</span> that activates your dormant Theta wave to attract wealth, learn faster, and unlock your God-given potential effortlessly.</p>
-        
-        <a href="https://track.wealth-tools.online/click/1" class="cta-button">Watch The Free Video Now &raquo;</a>
-        
-        <span class="guarantee">🔒 100% Secure & Confidential</span>
-    </div>
+    <main class="content-wrapper">
+        <div class="gradient-card">
+            <span class="pre-headline">Backed by NASA Research</span>
+            <h1>Edison's 7-Second Brain Trick Activates Your Superbrain</h1>
+            <p>Discover the simple <span class="highlight">7-minute daily audio ritual</span> that activates your dormant Theta wave to attract wealth, learn faster, and unlock your God-given potential effortlessly.</p>
+            
+            <a href="https://track.wealth-tools.online/click/1" class="cta-button">Watch The Free Video Now &raquo;</a>
+            
+            <span class="guarantee">🔒 100% Secure & Confidential</span>
+        </div>
+    </main>
 
     <footer>
         <p>&copy; 2026 wealth-tools.online. All Rights Reserved.</p>
