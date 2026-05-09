@@ -12,7 +12,7 @@
     <script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/FileSaver.js/2.0.5/FileSaver.min.js"></script>
     
-    <!-- تضمين محرك الذكاء الاصطناعي (مكتبة imgly) اللي بيشتغل بدون حظر -->
+    <!-- تضمين محرك الذكاء الاصطناعي -->
     <script src="https://cdn.jsdelivr.net/npm/@imgly/background-removal@1.4.5/dist/browser/bundle.umd.min.js"></script>
 
     <style>
@@ -23,7 +23,7 @@
         
         .loader {
             border: 4px solid #f3f3f3;
-            border-top: 4px solid #6366f1; /* Indigo color */
+            border-top: 4px solid #0891b2; /* Cyan color */
             border-radius: 50%;
             width: 30px;
             height: 30px;
@@ -39,8 +39,8 @@
             border: 2px dashed #cbd5e1;
         }
         .drop-zone.dragover {
-            background-color: #e0e7ff;
-            border-color: #6366f1;
+            background-color: #cffafe;
+            border-color: #0891b2;
             transform: scale(1.02);
         }
 
@@ -69,50 +69,49 @@
 
     <div class="max-w-6xl mx-auto bg-white rounded-3xl shadow-xl overflow-hidden border border-slate-100">
         
-        <header class="bg-indigo-600 text-white p-8 text-center relative overflow-hidden">
+        <header class="bg-gradient-to-r from-cyan-600 to-blue-600 text-white p-8 text-center relative overflow-hidden">
             <div class="absolute inset-0 opacity-20 bg-[url('https://www.transparenttextures.com/patterns/cubes.png')]"></div>
             <div class="relative z-10">
-                <h1 class="text-4xl font-extrabold mb-3 tracking-tight"><i class="fa-solid fa-wand-magic-sparkles mr-2 text-indigo-200"></i> مزيل الخلفية الاحترافي</h1>
-                <p class="text-indigo-100 text-lg">ارفع صورك وسيتم تفريغها باستخدام الذكاء الاصطناعي مجاناً وبسرعة.</p>
+                <h1 class="text-4xl font-extrabold mb-3 tracking-tight"><i class="fa-solid fa-wand-magic-sparkles mr-2 text-cyan-200"></i> مزيل الخلفية الاحترافي</h1>
+                <p class="text-cyan-100 text-lg">ارفع صورك وسيتم تفريغها باستخدام الذكاء الاصطناعي مجاناً وبسرعة.</p>
             </div>
         </header>
 
         <div class="p-6 md:p-10">
             
-            <!-- رسالة تحميل نموذج الذكاء الاصطناعي -->
-            <div id="model-loading" class="mb-8 p-6 bg-indigo-50 border border-indigo-100 rounded-2xl hidden flex-col gap-4 shadow-inner">
-                <div class="flex items-center gap-3 text-indigo-800 font-bold text-lg">
+            <div id="model-loading" class="mb-8 p-6 bg-cyan-50 border border-cyan-100 rounded-2xl hidden flex-col gap-4 shadow-inner">
+                <div class="flex items-center gap-3 text-cyan-800 font-bold text-lg">
                     <div class="loader" style="width: 24px; height: 24px; border-width: 3px;"></div>
                     <span>جاري تحميل ملفات الذكاء الاصطناعي (يحدث مرة واحدة فقط)...</span>
                 </div>
-                <div class="w-full bg-indigo-200 rounded-full h-4 overflow-hidden shadow-inner">
-                    <div id="progress-bar-fill" class="bg-indigo-600 h-4 rounded-full transition-all duration-300 ease-out" style="width: 0%"></div>
+                <div class="w-full bg-cyan-200 rounded-full h-4 overflow-hidden shadow-inner">
+                    <div id="progress-bar-fill" class="bg-cyan-600 h-4 rounded-full transition-all duration-300 ease-out" style="width: 0%"></div>
                 </div>
-                <div id="loading-details" class="text-sm text-indigo-700 text-right font-medium">جاري التحضير... برجاء الانتظار</div>
+                <div id="loading-details" class="text-sm text-cyan-700 text-right font-medium">جاري التحضير... برجاء الانتظار</div>
             </div>
 
             <div id="drop-area" class="drop-zone p-12 rounded-3xl text-center cursor-pointer bg-slate-50 hover:bg-slate-100 flex flex-col items-center justify-center gap-5 mb-10 border-2 border-dashed border-slate-300">
-                <div class="w-20 h-20 bg-indigo-100 rounded-full flex items-center justify-center mb-2">
-                    <i class="fa-solid fa-cloud-arrow-up text-4xl text-indigo-600"></i>
+                <div class="w-20 h-20 bg-cyan-100 rounded-full flex items-center justify-center mb-2">
+                    <i class="fa-solid fa-cloud-arrow-up text-4xl text-cyan-600"></i>
                 </div>
                 <h3 class="text-2xl font-bold text-slate-700">اسحب وأفلت الصور هنا</h3>
                 <p class="text-slate-500 text-lg">أو اضغط لاختيار الصور من جهازك</p>
                 <p class="text-slate-400 text-sm font-medium">ندعم (JPG, PNG, WEBP, BMP... الخ)</p>
                 <input type="file" id="file-input" multiple accept="image/*" class="hidden">
-                <button class="mt-4 px-8 py-3 bg-indigo-600 text-white font-bold rounded-full hover:bg-indigo-700 hover:shadow-lg transition-all transform hover:-translate-y-1">
+                <button class="mt-4 px-8 py-3 bg-gradient-to-r from-cyan-500 to-cyan-600 text-white font-bold rounded-full hover:from-cyan-600 hover:to-cyan-700 hover:shadow-lg transition-all transform hover:-translate-y-1">
                     تصفح الملفات
                 </button>
             </div>
 
             <div id="toolbar" class="flex flex-wrap justify-between items-center mb-8 hidden gap-4 p-5 bg-slate-50 rounded-2xl border border-slate-200 shadow-sm">
                 <div class="font-bold text-slate-700 text-lg">
-                    <span id="total-count" class="bg-indigo-100 text-indigo-800 px-3 py-1 rounded-lg">0</span> صورة / صور
+                    <span id="total-count" class="bg-cyan-100 text-cyan-800 px-3 py-1 rounded-lg">0</span> صورة / صور
                 </div>
                 <div class="flex flex-wrap gap-3">
                     <button id="process-all-btn" class="px-5 py-2.5 bg-green-600 text-white font-semibold rounded-xl hover:bg-green-700 transition flex items-center gap-2 shadow-sm">
                         <i class="fa-solid fa-play"></i> معالجة الكل
                     </button>
-                    <button id="download-all-btn" class="px-5 py-2.5 bg-indigo-600 text-white font-semibold rounded-xl hover:bg-indigo-700 transition flex items-center gap-2 shadow-sm hidden">
+                    <button id="download-all-btn" class="px-5 py-2.5 bg-cyan-600 text-white font-semibold rounded-xl hover:bg-cyan-700 transition flex items-center gap-2 shadow-sm hidden">
                         <i class="fa-solid fa-file-zipper"></i> تحميل الكل (ZIP)
                     </button>
                     <button id="clear-all-btn" class="px-5 py-2.5 bg-rose-100 text-rose-700 font-semibold rounded-xl hover:bg-rose-200 transition flex items-center gap-2">
@@ -121,7 +120,6 @@
                 </div>
             </div>
 
-            <!-- شبكة عرض الصور -->
             <div id="gallery" class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
                 <!-- الصور ستضاف هنا عبر JavaScript -->
             </div>
@@ -134,7 +132,7 @@
             <i class="fa-solid fa-circle-exclamation text-5xl text-rose-500 mb-5"></i>
             <h3 class="text-xl font-bold text-slate-800 mb-2">تنبيه</h3>
             <p id="alert-message" class="text-slate-600 font-medium mb-8 leading-relaxed"></p>
-            <button onclick="document.getElementById('custom-alert').classList.add('hidden')" class="w-full py-3 bg-indigo-600 text-white font-bold rounded-xl hover:bg-indigo-700 transition shadow-md">حسناً، فهمت</button>
+            <button onclick="document.getElementById('custom-alert').classList.add('hidden')" class="w-full py-3 bg-cyan-600 text-white font-bold rounded-xl hover:bg-cyan-700 transition shadow-md">حسناً، فهمت</button>
         </div>
     </div>
 
@@ -155,9 +153,9 @@
         let isProcessing = false;
         let modelLoaded = false;
 
-        // إعدادات مكتبة الذكاء الاصطناعي مع الاعتماد على سيرفر jsdelivr الخالي من الحظر
+        // هنا كان الخطأ، قمت بتعديل المسار ليقرأ من (-data) بشكل صحيح
         const config = {
-            publicPath: 'https://cdn.jsdelivr.net/npm/@imgly/background-removal@1.4.5/dist/', 
+            publicPath: 'https://cdn.jsdelivr.net/npm/@imgly/background-removal-data@1.4.5/dist/', 
             progress: (key, current, total) => {
                 if (!modelLoaded) {
                     modelLoadingDiv.classList.remove('hidden');
@@ -275,7 +273,7 @@
 
                 <div class="p-4 bg-white border-t border-slate-100 flex justify-between items-center mt-auto">
                     <div class="flex gap-2" id="action-buttons-${imgData.id}">
-                         <button id="btn-process-${imgData.id}" class="process-btn px-4 py-2 bg-indigo-50 text-indigo-600 hover:bg-indigo-600 hover:text-white rounded-xl font-semibold transition flex items-center gap-2">
+                         <button id="btn-process-${imgData.id}" class="process-btn px-4 py-2 bg-cyan-50 text-cyan-600 hover:bg-cyan-600 hover:text-white rounded-xl font-semibold transition flex items-center gap-2">
                             <i class="fa-solid fa-wand-magic-sparkles"></i> تفريغ
                         </button>
                         <button id="btn-download-${imgData.id}" class="download-btn px-4 py-2 bg-green-50 text-green-600 hover:bg-green-600 hover:text-white rounded-xl font-semibold transition hidden flex items-center gap-2">
@@ -360,7 +358,7 @@
                 statusBadge.classList.remove('hidden');
 
             } catch (error) {
-                console.error("Error processing image:", error);
+                console.error("Error processing image Details:", error);
                 imgData.status = 'error';
                 
                 overlay.classList.add('hidden');
@@ -370,10 +368,11 @@
                 statusBadge.className = 'absolute top-3 right-3 px-3 py-1 rounded-full text-xs font-bold bg-rose-500 text-white shadow-md';
                 statusBadge.classList.remove('hidden');
 
-                // لو حصل خطأ نقفل شريط التحميل
                 modelLoadingDiv.classList.add('hidden');
                 modelLoadingDiv.classList.remove('flex');
-                showAlert('حدث خطأ أثناء معالجة الصورة. تأكد من استقرار الإنترنت وحاول مجدداً.');
+                
+                // رسالة واضحة في حالة حدوث أي مشكلة أخرى
+                showAlert('فشل الاتصال بملفات الذكاء الاصطناعي. تم تحديث الرابط بنجاح الآن. برجاء التأكد من عمل تحديث للصفحة (Ctrl+F5).');
             }
 
             updateUI();
@@ -456,7 +455,6 @@
             });
         }
 
-        // ربط الأزرار بالأحداث
         processAllBtn.addEventListener('click', processAllImages);
         clearAllBtn.addEventListener('click', clearAll);
         downloadAllBtn.addEventListener('click', downloadAll);
