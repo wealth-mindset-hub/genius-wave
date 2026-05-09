@@ -3,18 +3,15 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>أداة إزالة الخلفية الذكية (HuggingFace)</title>
-    
-    <!-- تضمين Tailwind CSS للتصميم -->
+    <title>أداة إزالة الخلفية الاحترافية</title>
+    <!-- تضمين مكتبة Tailwind CSS -->
     <script src="https://cdn.tailwindcss.com"></script>
-    
-    <!-- تضمين FontAwesome للأيقونات -->
+    <!-- تضمين مكتبة FontAwesome للأيقونات -->
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
-    
-    <!-- تضمين مكتبات التحميل المضغوط -->
+    <!-- تضمين مكتبات التعامل مع الـ ZIP -->
     <script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/FileSaver.js/2.0.5/FileSaver.min.js"></script>
-
+    
     <style>
         body {
             font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
@@ -23,7 +20,7 @@
         
         .loader {
             border: 4px solid #f3f3f3;
-            border-top: 4px solid #6366f1; /* لون بنفسجي/نيلي */
+            border-top: 4px solid #6366f1; /* Indigo color */
             border-radius: 50%;
             width: 30px;
             height: 30px;
@@ -36,110 +33,134 @@
 
         .drop-zone {
             transition: all 0.3s ease;
-            border: 2px dashed #94a3b8;
+            border: 2px dashed #cbd5e1;
         }
         .drop-zone.dragover {
             background-color: #e0e7ff;
-            border-color: #4f46e5;
+            border-color: #6366f1;
             transform: scale(1.02);
         }
 
+        /* خلفية المربعات الشفافة */
         .transparent-bg {
             background-image: 
-                linear-gradient(45deg, #cbd5e1 25%, transparent 25%), 
-                linear-gradient(135deg, #cbd5e1 25%, transparent 25%),
-                linear-gradient(45deg, transparent 75%, #cbd5e1 75%),
-                linear-gradient(135deg, transparent 75%, #cbd5e1 75%);
+                linear-gradient(45deg, #e2e8f0 25%, transparent 25%), 
+                linear-gradient(135deg, #e2e8f0 25%, transparent 25%),
+                linear-gradient(45deg, transparent 75%, #e2e8f0 75%),
+                linear-gradient(135deg, transparent 75%, #e2e8f0 75%);
             background-size: 20px 20px;
             background-position: 0 0, 10px 0, 10px -10px, 0px 10px;
             background-color: white;
         }
 
         .image-card {
-            transition: transform 0.2s, box-shadow 0.2s;
+            transition: transform 0.2s;
         }
         .image-card:hover {
             transform: translateY(-5px);
-            box-shadow: 0 10px 15px -3px rgba(99, 102, 241, 0.2);
+            box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -2px rgba(0, 0, 0, 0.05);
         }
     </style>
 </head>
-<body class="min-h-screen p-4 md:p-8">
+<body class="min-h-screen p-4 md:p-8 text-slate-800">
 
-    <div class="max-w-6xl mx-auto bg-white rounded-3xl shadow-2xl overflow-hidden border border-indigo-50">
+    <div class="max-w-6xl mx-auto bg-white rounded-3xl shadow-xl overflow-hidden border border-slate-100">
         
-        <header class="bg-gradient-to-r from-indigo-600 to-purple-600 text-white p-6 text-center shadow-md">
-            <h1 class="text-3xl font-bold mb-2"><i class="fa-solid fa-scissors mr-2"></i> مزيل الخلفية الاحترافي</h1>
-            <p class="text-indigo-100">يعمل بالذكاء الاصطناعي (Transformers.js) - سرعة عالية وحماية للخصوصية.</p>
+        <!-- الهيدر -->
+        <header class="bg-indigo-600 text-white p-8 text-center relative overflow-hidden">
+            <div class="absolute inset-0 opacity-20 bg-[url('https://www.transparenttextures.com/patterns/cubes.png')]"></div>
+            <div class="relative z-10">
+                <h1 class="text-4xl font-extrabold mb-3 tracking-tight"><i class="fa-solid fa-wand-magic-sparkles mr-2 text-indigo-200"></i> مزيل الخلفية الاحترافي</h1>
+                <p class="text-indigo-100 text-lg">ارفع صورك وسيتم تفريغها باستخدام الذكاء الاصطناعي مجاناً وبسرعة.</p>
+            </div>
         </header>
 
-        <div class="p-6 md:p-8">
+        <div class="p-6 md:p-10">
             
-            <div id="model-loading" class="mb-8 p-5 bg-indigo-50 border border-indigo-200 rounded-xl hidden flex-col gap-3 shadow-inner">
-                <div class="flex items-center gap-3 text-indigo-800 font-bold">
-                    <div class="loader" style="width: 20px; height: 20px; border-width: 3px;"></div>
-                    <span>جاري تحميل ملفات الذكاء الاصطناعي للمرة الأولى...</span>
-                </div>
-                <div class="w-full bg-indigo-200 rounded-full h-4 overflow-hidden shadow-inner relative">
-                    <div id="progress-bar-fill" class="bg-indigo-600 h-4 rounded-full transition-all duration-300 ease-out" style="width: 0%"></div>
-                </div>
-                <div id="loading-details" class="text-sm text-indigo-700 font-medium">جاري التحضير... 0%</div>
-                
-                <p class="text-xs text-indigo-600 mt-2 text-center border-t border-indigo-200 pt-2">
-                    <i class="fa-solid fa-cloud-arrow-down"></i> يتم التحميل من سيرفرات HuggingFace (أسرع وأكثر استقراراً).
-                </p>
-            </div>
-
-            <div class="mb-6 flex flex-wrap gap-4 items-center bg-gray-50 p-4 rounded-xl border border-gray-200 justify-center">
-                <label class="font-semibold text-gray-700"><i class="fa-solid fa-microchip text-indigo-500 mr-1"></i> دقة المعالجة:</label>
-                <select id="model-selector" class="border border-gray-300 rounded-lg px-4 py-2 bg-white text-gray-700 shadow-sm focus:outline-none focus:border-indigo-500 font-medium cursor-pointer">
-                    <option value="Xenova/modnet">⚡ سريع جداً (ممتاز للأشخاص - 10 ميجا)</option>
-                    <option value="briaai/RMBG-1.4" selected>✨ جودة عالية (لكل شيء - 40 ميجا)</option>
+            <!-- اختيار جودة الموديل -->
+            <div class="mb-8 flex flex-wrap gap-4 items-center bg-slate-50 p-5 rounded-2xl border border-slate-200 justify-center">
+                <label class="font-bold text-slate-700 flex items-center gap-2">
+                    <i class="fa-solid fa-microchip text-indigo-500"></i> دقة المعالجة:
+                </label>
+                <select id="model-selector" class="border border-slate-300 rounded-xl px-4 py-2 bg-white text-slate-700 shadow-sm focus:outline-none focus:border-indigo-500 focus:ring-2 focus:ring-indigo-200 font-medium cursor-pointer transition">
+                    <option value="Xenova/modnet" selected>⚡ سريع جداً (ممتاز للأشخاص - 10 ميجا)</option>
+                    <option value="briaai/RMBG-1.4">✨ جودة عالية (لكل شيء - 40 ميجا)</option>
                 </select>
             </div>
 
-            <div id="drop-area" class="drop-zone p-12 rounded-2xl text-center cursor-pointer bg-slate-50 hover:bg-slate-100 flex flex-col items-center justify-center gap-4 mb-8">
-                <i class="fa-solid fa-images text-6xl text-indigo-300"></i>
+            <!-- رسالة تحميل نموذج الذكاء الاصطناعي -->
+            <div id="model-loading" class="mb-8 p-6 bg-indigo-50 border border-indigo-100 rounded-2xl hidden flex-col gap-4 shadow-inner">
+                <div class="flex items-center gap-3 text-indigo-800 font-bold text-lg">
+                    <div class="loader" style="width: 24px; height: 24px; border-width: 3px;"></div>
+                    <span>جاري الاتصال وتجهيز الذكاء الاصطناعي...</span>
+                </div>
+                <div class="w-full bg-indigo-200 rounded-full h-4 overflow-hidden shadow-inner">
+                    <div id="progress-bar-fill" class="bg-indigo-600 h-4 rounded-full transition-all duration-300 ease-out" style="width: 0%"></div>
+                </div>
+                <div id="loading-details" class="text-sm text-indigo-700 text-right font-medium">جاري التحضير...</div>
+            </div>
+
+            <!-- منطقة الإسقاط ورفع الصور -->
+            <div id="drop-area" class="drop-zone p-12 rounded-3xl text-center cursor-pointer bg-slate-50 hover:bg-slate-100 flex flex-col items-center justify-center gap-5 mb-10 border-2 border-dashed border-slate-300">
+                <div class="w-20 h-20 bg-indigo-100 rounded-full flex items-center justify-center mb-2">
+                    <i class="fa-solid fa-cloud-arrow-up text-4xl text-indigo-600"></i>
+                </div>
                 <h3 class="text-2xl font-bold text-slate-700">اسحب وأفلت الصور هنا</h3>
-                <p class="text-slate-500">أو اضغط لاختيار مجموعة صور للبدء</p>
+                <p class="text-slate-500 text-lg">أو اضغط لاختيار الصور من جهازك</p>
+                <p class="text-slate-400 text-sm font-medium">ندعم (JPG, PNG, WEBP, BMP... الخ)</p>
                 <input type="file" id="file-input" multiple accept="image/*" class="hidden">
-                <button class="px-8 py-3 bg-indigo-600 text-white font-bold rounded-full hover:bg-indigo-700 transition shadow-lg hover:shadow-indigo-500/30 transform hover:-translate-y-1 mt-2">
-                    اختيار الملفات
+                <button class="mt-4 px-8 py-3 bg-indigo-600 text-white font-bold rounded-full hover:bg-indigo-700 hover:shadow-lg transition-all transform hover:-translate-y-1">
+                    تصفح الملفات
                 </button>
             </div>
 
-            <div id="toolbar" class="flex flex-wrap justify-between items-center mb-6 hidden gap-4 p-4 bg-indigo-50 rounded-xl border border-indigo-100">
-                <div class="font-bold text-indigo-900 bg-white px-4 py-2 rounded-lg shadow-sm">
-                    العدد: <span id="total-count" class="text-indigo-600 text-lg">0</span>
+            <!-- شريط الأدوات -->
+            <div id="toolbar" class="flex flex-wrap justify-between items-center mb-8 hidden gap-4 p-5 bg-slate-50 rounded-2xl border border-slate-200 shadow-sm">
+                <div class="font-bold text-slate-700 text-lg">
+                    <span id="total-count" class="bg-indigo-100 text-indigo-800 px-3 py-1 rounded-lg">0</span> صورة / صور
                 </div>
-                <div class="flex gap-2">
-                    <button id="process-all-btn" class="px-5 py-2 bg-indigo-600 text-white font-bold rounded-lg hover:bg-indigo-700 transition shadow-md">
-                        <i class="fa-solid fa-play"></i> تفريغ الكل
+                <div class="flex flex-wrap gap-3">
+                    <button id="process-all-btn" class="px-5 py-2.5 bg-green-600 text-white font-semibold rounded-xl hover:bg-green-700 transition flex items-center gap-2 shadow-sm">
+                        <i class="fa-solid fa-play"></i> معالجة الكل
                     </button>
-                    <button id="download-all-btn" class="px-5 py-2 bg-emerald-500 text-white font-bold rounded-lg hover:bg-emerald-600 transition shadow-md hidden">
-                        <i class="fa-solid fa-download"></i> تحميل الكل (ZIP)
+                    <button id="download-all-btn" class="px-5 py-2.5 bg-indigo-600 text-white font-semibold rounded-xl hover:bg-indigo-700 transition flex items-center gap-2 shadow-sm hidden">
+                        <i class="fa-solid fa-file-zipper"></i> تحميل الكل (ZIP)
                     </button>
-                    <button id="clear-all-btn" class="px-5 py-2 bg-red-100 text-red-600 font-bold rounded-lg hover:bg-red-200 transition">
-                        <i class="fa-solid fa-trash"></i> مسح
+                    <button id="clear-all-btn" class="px-5 py-2.5 bg-rose-100 text-rose-700 font-semibold rounded-xl hover:bg-rose-200 transition flex items-center gap-2">
+                        <i class="fa-solid fa-trash-can"></i> مسح الكل
                     </button>
                 </div>
             </div>
 
             <!-- شبكة عرض الصور -->
-            <div id="gallery" class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-6"></div>
+            <div id="gallery" class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
+                <!-- الصور ستضاف هنا عبر JavaScript -->
+            </div>
 
         </div>
     </div>
 
+    <!-- نافذة منبثقة مخصصة بديلة لـ alert -->
+    <div id="custom-alert" class="fixed inset-0 bg-slate-900/60 hidden flex items-center justify-center z-50 backdrop-blur-sm transition-opacity">
+        <div class="bg-white p-8 rounded-3xl shadow-2xl max-w-sm w-full text-center mx-4 transform transition-transform scale-100">
+            <i class="fa-solid fa-circle-exclamation text-5xl text-rose-500 mb-5"></i>
+            <h3 class="text-xl font-bold text-slate-800 mb-2">تنبيه</h3>
+            <p id="alert-message" class="text-slate-600 font-medium mb-8 leading-relaxed"></p>
+            <button onclick="document.getElementById('custom-alert').classList.add('hidden')" class="w-full py-3 bg-indigo-600 text-white font-bold rounded-xl hover:bg-indigo-700 transition shadow-md">حسناً، فهمت</button>
+        </div>
+    </div>
+
     <script type="module">
-        // استخدام مكتبة Transformers.js (الإصدار المستقر)
+        // استيراد مكتبة Transformers.js
         import { pipeline, env, RawImage } from 'https://cdn.jsdelivr.net/npm/@xenova/transformers@2.17.1';
 
-        // إعدادات المكتبة لضمان التحميل من الإنترنت وعدم البحث عن ملفات محلية
+        // إعدادات المكتبة لتخطي أي مشاكل في الاستضافة
         env.allowLocalModels = false;
         env.useBrowserCache = true;
+        env.remoteHost = 'https://hf-mirror.com'; // السيرفر البديل السريع
+        env.backends.onnx.wasm.wasmPaths = 'https://cdn.jsdelivr.net/npm/@xenova/transformers@2.17.1/dist/';
 
-        // المتغيرات 
+        // المتغيرات الأساسية
         const dropArea = document.getElementById('drop-area');
         const fileInput = document.getElementById('file-input');
         const gallery = document.getElementById('gallery');
@@ -158,8 +179,16 @@
         let currentLoadedModel = null;
         let isProcessing = false;
 
+        // دالة إظهار التنبيه
+        function showAlert(message) {
+            document.getElementById('alert-message').innerText = message;
+            document.getElementById('custom-alert').classList.remove('hidden');
+        }
+
+        // توليد معرف فريد
         const generateId = () => Math.random().toString(36).substr(2, 9);
 
+        // تحويل الملف لـ Data URL
         const readFileAsDataURL = (file) => {
             return new Promise((resolve, reject) => {
                 const reader = new FileReader();
@@ -169,108 +198,18 @@
             });
         };
 
-        // أحداث السحب والإفلات
-        ['dragenter', 'dragover', 'dragleave', 'drop'].forEach(eventName => {
-            dropArea.addEventListener(eventName, e => { e.preventDefault(); e.stopPropagation(); }, false);
-        });
-
-        ['dragenter', 'dragover'].forEach(eventName => {
-            dropArea.addEventListener(eventName, () => dropArea.classList.add('dragover'), false);
-        });
-
-        ['dragleave', 'drop'].forEach(eventName => {
-            dropArea.addEventListener(eventName, () => dropArea.classList.remove('dragover'), false);
-        });
-
-        dropArea.addEventListener('drop', e => handleFiles(e.dataTransfer.files), false);
-        dropArea.addEventListener('click', () => fileInput.click());
-        fileInput.addEventListener('change', e => { handleFiles(e.target.files); fileInput.value = ''; });
-
-        async function handleFiles(files) {
-            if (files.length === 0) return;
-            const imageFiles = Array.from(files).filter(file => file.type.startsWith('image/'));
-            
-            for (const file of imageFiles) {
-                const dataUrl = await readFileAsDataURL(file);
-                const imgObj = {
-                    id: generateId(),
-                    file: file,
-                    originalUrl: dataUrl,
-                    processedUrl: null,
-                    status: 'pending'
-                };
-                imagesData.push(imgObj);
-                createImageCard(imgObj);
-            }
-            updateUI();
-        }
-
-        function createImageCard(imgData) {
-            const card = document.createElement('div');
-            card.className = 'image-card bg-white border border-gray-200 rounded-2xl overflow-hidden flex flex-col relative shadow-sm';
-            card.id = `card-${imgData.id}`;
-
-            card.innerHTML = `
-                <div class="relative h-56 transparent-bg flex items-center justify-center bg-gray-100 overflow-hidden group">
-                    <img src="${imgData.originalUrl}" class="max-w-full max-h-full object-contain transition-opacity duration-300" id="img-${imgData.id}">
-                    
-                    <div id="overlay-${imgData.id}" class="absolute inset-0 bg-indigo-900/60 flex flex-col items-center justify-center text-white hidden backdrop-blur-sm transition-all">
-                        <div class="loader mb-3 border-indigo-200 border-top-indigo-500"></div>
-                        <span class="text-sm font-bold tracking-wide">جاري التفريغ...</span>
-                    </div>
-
-                    <div id="status-badge-${imgData.id}" class="absolute top-3 right-3 px-3 py-1 rounded-full text-xs font-bold hidden shadow-md"></div>
-                </div>
-
-                <div class="p-4 bg-white border-t border-gray-100 flex justify-between items-center mt-auto">
-                    <div class="flex gap-2">
-                         <button data-id="${imgData.id}" class="btn-process px-4 py-2 bg-indigo-50 text-indigo-600 hover:bg-indigo-600 hover:text-white font-semibold rounded-xl transition flex items-center gap-2" title="إزالة الخلفية">
-                            <i class="fa-solid fa-wand-magic-sparkles"></i> تفريغ
-                        </button>
-                        <button data-id="${imgData.id}" class="btn-download px-4 py-2 bg-emerald-50 text-emerald-600 hover:bg-emerald-600 hover:text-white font-semibold rounded-xl transition flex items-center gap-2 hidden" title="تحميل">
-                            <i class="fa-solid fa-download"></i> حفظ
-                        </button>
-                    </div>
-                    <button data-id="${imgData.id}" class="btn-remove p-2 text-red-400 hover:bg-red-50 hover:text-red-600 rounded-xl transition" title="حذف">
-                        <i class="fa-solid fa-trash-can"></i>
-                    </button>
-                </div>
-            `;
-            gallery.appendChild(card);
-        }
-
-        function updateUI() {
-            totalCountSpan.innerText = imagesData.length;
-            if (imagesData.length > 0) {
-                toolbar.classList.remove('hidden');
-                const allDone = imagesData.length > 0 && imagesData.every(img => img.status === 'done');
-                
-                if (allDone) {
-                    downloadAllBtn.classList.remove('hidden');
-                    processAllBtn.classList.add('hidden');
-                } else {
-                    downloadAllBtn.classList.add('hidden');
-                    processAllBtn.classList.remove('hidden');
-                }
-
-                processAllBtn.disabled = isProcessing;
-                processAllBtn.classList.toggle('opacity-50', isProcessing);
-            } else {
-                toolbar.classList.add('hidden');
-            }
-        }
-
-        async function loadAiModel() {
+        // تحميل موديل الذكاء الاصطناعي
+        async function loadModel() {
             const selectedModel = modelSelector.value;
             
-            // إذا كان الموديل محمل بالفعل وهو نفس الموديل المختار، فلا تفعل شيئاً
+            // إذا كان الموديل محملاً بالفعل، لا نكرر التحميل
             if (segmenter && currentLoadedModel === selectedModel) return;
 
             modelLoadingDiv.classList.remove('hidden');
             modelLoadingDiv.classList.add('flex');
             currentLoadedModel = selectedModel;
             progressBarFill.style.width = '0%';
-            loadingDetails.innerText = 'بدء الاتصال...';
+            loadingDetails.innerText = 'بدء الاتصال بالسيرفر...';
 
             try {
                 segmenter = await pipeline('image-segmentation', selectedModel, {
@@ -278,7 +217,7 @@
                         if (info.status === 'progress') {
                             const percent = Math.round(info.progress);
                             progressBarFill.style.width = percent + '%';
-                            loadingDetails.innerText = `جاري التنزيل: ${percent}%`;
+                            loadingDetails.innerText = `جاري التنزيل والتجهيز: ${percent}%`;
                         } else if (info.status === 'ready') {
                             loadingDetails.innerText = `تم التحميل بنجاح!`;
                             setTimeout(() => {
@@ -290,9 +229,140 @@
                 });
             } catch (error) {
                 console.error("Model Load Error:", error);
-                loadingDetails.innerText = `حدث خطأ في التحميل. يرجى تحديث الصفحة.`;
-                alert("فشل تحميل الذكاء الاصطناعي. تأكد من اتصالك بالإنترنت.");
+                loadingDetails.innerText = `فشل التحميل بسبب انقطاع الاتصال.`;
+                showAlert("تعذر تحميل ملفات الذكاء الاصطناعي! يرجى التأكد من استقرار الإنترنت لديك. جرب فتح الصفحة في نافذة تصفح مخفي أو قم بتغيير الموديل.");
+                currentLoadedModel = null;
                 throw error;
+            }
+        }
+
+        // التعامل مع السحب والإفلات
+        ['dragenter', 'dragover', 'dragleave', 'drop'].forEach(eventName => {
+            dropArea.addEventListener(eventName, preventDefaults, false);
+        });
+
+        function preventDefaults(e) {
+            e.preventDefault();
+            e.stopPropagation();
+        }
+
+        ['dragenter', 'dragover'].forEach(eventName => {
+            dropArea.addEventListener(eventName, () => dropArea.classList.add('dragover'), false);
+        });
+
+        ['dragleave', 'drop'].forEach(eventName => {
+            dropArea.addEventListener(eventName, () => dropArea.classList.remove('dragover'), false);
+        });
+
+        dropArea.addEventListener('drop', handleDrop, false);
+        dropArea.addEventListener('click', () => fileInput.click());
+        fileInput.addEventListener('change', handleFilesSelect);
+
+        function handleDrop(e) {
+            const dt = e.dataTransfer;
+            const files = dt.files;
+            handleFiles(files);
+        }
+
+        function handleFilesSelect(e) {
+            const files = e.target.files;
+            handleFiles(files);
+            fileInput.value = ''; // تفريغ لاختيار نفس الملف مجدداً
+        }
+
+        async function handleFiles(files) {
+            if (files.length === 0) return;
+
+            const imageFiles = Array.from(files).filter(file => file.type.startsWith('image/'));
+            
+            if (imageFiles.length === 0) {
+                showAlert('الرجاء اختيار ملفات صور فقط.');
+                return;
+            }
+
+            for (const file of imageFiles) {
+                const id = generateId();
+                const dataUrl = await readFileAsDataURL(file);
+                
+                const imgObj = {
+                    id: id,
+                    file: file,
+                    originalUrl: dataUrl,
+                    processedUrl: null,
+                    status: 'pending',
+                    element: null
+                };
+                
+                imagesData.push(imgObj);
+                createImageCard(imgObj);
+            }
+
+            updateUI();
+        }
+
+        function createImageCard(imgData) {
+            const card = document.createElement('div');
+            card.className = 'image-card bg-white border border-slate-200 rounded-2xl overflow-hidden flex flex-col relative';
+            card.id = `card-${imgData.id}`;
+
+            card.innerHTML = `
+                <div class="relative h-56 transparent-bg flex items-center justify-center bg-slate-100 overflow-hidden group">
+                    <img src="${imgData.originalUrl}" alt="Original" class="max-w-full max-h-full object-contain transition-opacity duration-300" id="img-${imgData.id}">
+                    
+                    <div id="overlay-${imgData.id}" class="absolute inset-0 bg-slate-900/60 flex flex-col items-center justify-center text-white hidden backdrop-blur-sm transition-all">
+                        <div class="loader mb-3"></div>
+                        <span class="text-sm font-bold tracking-wide">جاري المعالجة...</span>
+                    </div>
+
+                    <div id="status-badge-${imgData.id}" class="absolute top-3 right-3 px-3 py-1 rounded-full text-xs font-bold hidden shadow-md"></div>
+                </div>
+
+                <div class="p-4 bg-white border-t border-slate-100 flex justify-between items-center mt-auto">
+                    <div class="flex gap-2" id="action-buttons-${imgData.id}">
+                         <button id="btn-process-${imgData.id}" class="process-btn px-4 py-2 bg-indigo-50 text-indigo-600 hover:bg-indigo-600 hover:text-white rounded-xl font-semibold transition flex items-center gap-2">
+                            <i class="fa-solid fa-wand-magic-sparkles"></i> تفريغ
+                        </button>
+                        <button id="btn-download-${imgData.id}" class="download-btn px-4 py-2 bg-green-50 text-green-600 hover:bg-green-600 hover:text-white rounded-xl font-semibold transition hidden flex items-center gap-2">
+                            <i class="fa-solid fa-download"></i> تحميل
+                        </button>
+                    </div>
+                    <button id="btn-remove-${imgData.id}" class="remove-btn p-2 text-rose-400 hover:bg-rose-50 hover:text-rose-600 rounded-xl transition">
+                        <i class="fa-solid fa-trash-can text-lg"></i>
+                    </button>
+                </div>
+            `;
+
+            imgData.element = card;
+            gallery.appendChild(card);
+
+            // ربط الأزرار بعد إضافتها للـ DOM
+            card.querySelector(`#btn-process-${imgData.id}`).addEventListener('click', () => processSingleImage(imgData.id));
+            card.querySelector(`#btn-download-${imgData.id}`).addEventListener('click', () => downloadSingleImage(imgData.id));
+            card.querySelector(`#btn-remove-${imgData.id}`).addEventListener('click', () => removeImage(imgData.id));
+        }
+
+        function updateUI() {
+            totalCountSpan.innerText = imagesData.length;
+            
+            if (imagesData.length > 0) {
+                toolbar.classList.remove('hidden');
+                
+                const allDone = imagesData.length > 0 && imagesData.every(img => img.status === 'done');
+                if (allDone) {
+                    downloadAllBtn.classList.remove('hidden');
+                    processAllBtn.classList.add('hidden');
+                } else {
+                    downloadAllBtn.classList.add('hidden');
+                    processAllBtn.classList.remove('hidden');
+                }
+
+                processAllBtn.disabled = isProcessing;
+                processAllBtn.classList.toggle('opacity-50', isProcessing);
+                processAllBtn.classList.toggle('cursor-not-allowed', isProcessing);
+                clearAllBtn.disabled = isProcessing;
+                
+            } else {
+                toolbar.classList.add('hidden');
             }
         }
 
@@ -302,81 +372,98 @@
 
             imgData.status = 'processing';
             const overlay = document.getElementById(`overlay-${id}`);
-            const btnProcess = document.querySelector(`.btn-process[data-id="${id}"]`);
-            const btnDownload = document.querySelector(`.btn-download[data-id="${id}"]`);
+            const btnProcess = document.getElementById(`btn-process-${id}`);
+            const btnDownload = document.getElementById(`btn-download-${id}`);
             const statusBadge = document.getElementById(`status-badge-${id}`);
             
             overlay.classList.remove('hidden');
             btnProcess.classList.add('hidden');
-
+            
             try {
-                // 1. التأكد من تحميل الموديل
-                await loadAiModel();
+                // التأكد من تحميل الموديل أولاً
+                await loadModel();
 
-                // 2. تحميل الصورة لاستخراج الأبعاد
-                const imgElement = document.createElement('img');
-                imgElement.src = imgData.originalUrl;
-                await new Promise(r => imgElement.onload = r);
-
-                // 3. تحويل الصورة لصيغة يفهمها الذكاء الاصطناعي
-                const rawImage = await RawImage.fromURL(imgData.originalUrl);
-
-                // 4. تنفيذ العزل
-                const result = await segmenter(rawImage);
-                // النتيجة تحتوي على قناع (Mask) يحدد الخلفية
-                const maskImage = result[0].mask; 
-                const maskCanvas = maskImage.toCanvas();
-
-                // 5. دمج الصورة الأصلية مع القناع الشفاف
-                const canvas = document.createElement('canvas');
-                canvas.width = imgElement.naturalWidth;
-                canvas.height = imgElement.naturalHeight;
-                const ctx = canvas.getContext('2d');
-
-                // رسم الصورة الأصلية
-                ctx.drawImage(imgElement, 0, 0);
-                const originalImageData = ctx.getImageData(0, 0, canvas.width, canvas.height);
-
-                // تجهيز القناع بنفس الأبعاد
-                const tempCanvas = document.createElement('canvas');
-                tempCanvas.width = canvas.width;
-                tempCanvas.height = canvas.height;
-                const tempCtx = tempCanvas.getContext('2d');
-                tempCtx.drawImage(maskCanvas, 0, 0, tempCanvas.width, tempCanvas.height);
-                const maskImageData = tempCtx.getImageData(0, 0, tempCanvas.width, tempCanvas.height);
-
-                // تطبيق الشفافية (Alpha Channel) بيكسل ببيكسل
-                for (let i = 0; i < originalImageData.data.length; i += 4) {
-                    // نستخدم القناع لتحديد مستوى شفافية كل بيكسل
-                    originalImageData.data[i + 3] = maskImageData.data[i]; 
+                // تحويل الصورة لمعالجة الذكاء الاصطناعي
+                const image = await RawImage.fromURL(imgData.originalUrl);
+                
+                // تشغيل الموديل لاستخراج القناع (Mask)
+                const result = await segmenter(image);
+                
+                // استخراج القناع (يتعامل مع مخرجات الموديلات المختلفة)
+                let mask;
+                if (Array.isArray(result)) {
+                    mask = result.find(x => x.label === 'foreground' || x.label === 'LABEL_1')?.mask || result[0].mask;
+                } else {
+                    mask = result; 
                 }
 
-                ctx.putImageData(originalImageData, 0, 0);
+                // إنشاء Canvas للرسم
+                const canvas = document.createElement('canvas');
+                canvas.width = image.width;
+                canvas.height = image.height;
+                const ctx = canvas.getContext('2d');
+                
+                // رسم الصورة الأصلية
+                const imgElement = new Image();
+                imgElement.src = imgData.originalUrl;
+                await new Promise(r => { imgElement.onload = r; });
+                ctx.drawImage(imgElement, 0, 0);
+                
+                // قراءة بيانات البكسل
+                const imageData = ctx.getImageData(0, 0, canvas.width, canvas.height);
+                
+                // تطبيق القناع بذكاء (جعل الخلفية شفافة)
+                if (mask.width === image.width && mask.height === image.height) {
+                    // الموديل أرجع قناع بنفس الحجم
+                    for (let i = 0; i < mask.data.length; i++) {
+                        imageData.data[i * 4 + 3] = mask.data[i]; // تطبيق الشفافية
+                    }
+                    ctx.putImageData(imageData, 0, 0);
+                } else {
+                    // في حالة كان القناع بحجم مختلف، يتم تكبيره بالـ Canvas
+                    const maskCanvas = document.createElement('canvas');
+                    maskCanvas.width = mask.width;
+                    maskCanvas.height = mask.height;
+                    const maskCtx = maskCanvas.getContext('2d');
+                    const maskImgData = maskCtx.createImageData(mask.width, mask.height);
+                    for(let i=0; i < mask.data.length; i++) {
+                        maskImgData.data[i*4] = mask.data[i];
+                        maskImgData.data[i*4+1] = mask.data[i];
+                        maskImgData.data[i*4+2] = mask.data[i];
+                        maskImgData.data[i*4+3] = 255;
+                    }
+                    maskCtx.putImageData(maskImgData, 0, 0);
+                    
+                    ctx.globalCompositeOperation = 'destination-in';
+                    ctx.drawImage(maskCanvas, 0, 0, canvas.width, canvas.height);
+                    ctx.globalCompositeOperation = 'source-over';
+                }
 
-                // 6. استخراج الصورة النهائية
-                const blob = await new Promise(resolve => canvas.toBlob(resolve, 'image/png'));
-                const processedUrl = URL.createObjectURL(blob);
-
+                // تحويل النتيجة إلى صورة وعرضها
+                const processedUrl = await new Promise(resolve => canvas.toBlob(b => resolve(URL.createObjectURL(b)), 'image/png'));
+                
                 imgData.processedUrl = processedUrl;
                 imgData.status = 'done';
 
-                // تحديث الواجهة
-                document.getElementById(`img-${id}`).src = processedUrl;
+                const displayImgElement = document.getElementById(`img-${id}`);
+                displayImgElement.src = processedUrl;
+                
                 overlay.classList.add('hidden');
                 btnDownload.classList.remove('hidden');
                 
                 statusBadge.textContent = 'تم التفريغ';
-                statusBadge.className = 'absolute top-3 right-3 px-3 py-1 rounded-full text-xs font-bold bg-emerald-500 text-white shadow-md';
+                statusBadge.className = 'absolute top-3 right-3 px-3 py-1 rounded-full text-xs font-bold bg-green-500 text-white shadow-md';
                 statusBadge.classList.remove('hidden');
 
             } catch (error) {
-                console.error("Processing Error:", error);
+                console.error("Error processing image:", error);
                 imgData.status = 'error';
+                
                 overlay.classList.add('hidden');
                 btnProcess.classList.remove('hidden');
                 
                 statusBadge.textContent = 'حدث خطأ';
-                statusBadge.className = 'absolute top-3 right-3 px-3 py-1 rounded-full text-xs font-bold bg-red-500 text-white shadow-md';
+                statusBadge.className = 'absolute top-3 right-3 px-3 py-1 rounded-full text-xs font-bold bg-rose-500 text-white shadow-md';
                 statusBadge.classList.remove('hidden');
             }
 
@@ -389,6 +476,7 @@
             updateUI();
 
             const pendingImages = imagesData.filter(img => img.status === 'pending' || img.status === 'error');
+            
             for (const img of pendingImages) {
                 await processSingleImage(img.id);
             }
@@ -398,21 +486,35 @@
         }
 
         function removeImage(id) {
-            if (isProcessing && imagesData.find(i => i.id === id).status === 'processing') return;
+            if(isProcessing) {
+                const img = imagesData.find(i => i.id === id);
+                if(img && img.status === 'processing') return;
+            }
+
             imagesData = imagesData.filter(img => img.id !== id);
-            document.getElementById(`card-${id}`)?.remove();
+            const card = document.getElementById(`card-${id}`);
+            if (card) {
+                card.remove();
+            }
+            updateUI();
+        }
+
+        function clearAll() {
+            if (isProcessing) return;
+            imagesData = [];
+            gallery.innerHTML = '';
             updateUI();
         }
 
         function downloadSingleImage(id) {
-            const img = imagesData.find(i => i.id === id);
-            if (!img || img.status !== 'done') return;
-            
+            const imgData = imagesData.find(img => img.id === id);
+            if (!imgData || imgData.status !== 'done') return;
+
             const a = document.createElement('a');
-            a.href = img.processedUrl;
-            const originalName = img.file.name;
+            a.href = imgData.processedUrl;
+            const originalName = imgData.file.name;
             const nameWithoutExt = originalName.substring(0, originalName.lastIndexOf('.')) || originalName;
-            a.download = `${nameWithoutExt}-cleared.png`;
+            a.download = `${nameWithoutExt}-no-bg.png`;
             document.body.appendChild(a);
             a.click();
             document.body.removeChild(a);
@@ -423,41 +525,38 @@
             if (doneImages.length === 0) return;
 
             const zip = new JSZip();
-            for (const img of doneImages) {
+            
+            for (let i = 0; i < doneImages.length; i++) {
+                const img = doneImages[i];
                 try {
                     const response = await fetch(img.processedUrl);
                     const blob = await response.blob();
-                    const nameWithoutExt = img.file.name.substring(0, img.file.name.lastIndexOf('.')) || img.file.name;
-                    zip.file(`${nameWithoutExt}-cleared.png`, blob);
-                } catch (err) { console.error(err); }
+                    
+                    const originalName = img.file.name;
+                    const nameWithoutExt = originalName.substring(0, originalName.lastIndexOf('.')) || originalName;
+                    const fileName = `${nameWithoutExt}-no-bg.png`;
+                    
+                    zip.file(fileName, blob);
+                } catch (err) {
+                    console.error("Failed to add file to zip:", err);
+                }
             }
 
-            zip.generateAsync({type:"blob"}).then(content => {
-                saveAs(content, "images-cleared.zip");
+            zip.generateAsync({type:"blob"}).then(function(content) {
+                saveAs(content, "images-no-bg.zip");
             });
         }
 
-        // ربط أزرار المعالجة والتحميل الفردية باستخدام Event Delegation
-        gallery.addEventListener('click', (e) => {
-            const processBtn = e.target.closest('.btn-process');
-            if (processBtn) processSingleImage(processBtn.dataset.id);
-
-            const downloadBtn = e.target.closest('.btn-download');
-            if (downloadBtn) downloadSingleImage(downloadBtn.dataset.id);
-
-            const removeBtn = e.target.closest('.btn-remove');
-            if (removeBtn) removeImage(removeBtn.dataset.id);
-        });
-
-        // الأزرار الرئيسية
         processAllBtn.addEventListener('click', processAllImages);
-        clearAllBtn.addEventListener('click', () => {
-            if (isProcessing) return;
-            imagesData = [];
-            gallery.innerHTML = '';
-            updateUI();
-        });
+        clearAllBtn.addEventListener('click', clearAll);
         downloadAllBtn.addEventListener('click', downloadAll);
+
+        // عند تغيير الموديل من القائمة، نجبر الأداة على تحميله عند المعالجة القادمة
+        modelSelector.addEventListener('change', () => {
+            if (imagesData.length > 0) {
+                // اختياري: تنبيه المستخدم أن المعالجة القادمة ستسخدم الموديل الجديد
+            }
+        });
 
     </script>
 </body>
