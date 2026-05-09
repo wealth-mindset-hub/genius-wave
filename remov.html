@@ -12,8 +12,8 @@
     <script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/FileSaver.js/2.0.5/FileSaver.min.js"></script>
     
-    <!-- تضمين محرك الذكاء الاصطناعي -->
-    <script src="https://cdn.jsdelivr.net/npm/@imgly/background-removal@1.4.5/dist/browser/bundle.umd.min.js"></script>
+    <!-- تم التحديث للنسخة 1.7.0 لحل مشكلة الملفات المحذوفة من NPM -->
+    <script src="https://cdn.jsdelivr.net/npm/@imgly/background-removal@1.7.0/dist/browser/bundle.umd.min.js"></script>
 
     <style>
         body {
@@ -153,9 +153,8 @@
         let isProcessing = false;
         let modelLoaded = false;
 
-        // هنا كان الخطأ، قمت بتعديل المسار ليقرأ من (-data) بشكل صحيح
+        // تم مسح مسار publicPath ليتم الاعتماد على السيرفر الرسمي للمكتبة وتجنب أخطاء 404
         const config = {
-            publicPath: 'https://cdn.jsdelivr.net/npm/@imgly/background-removal-data@1.4.5/dist/', 
             progress: (key, current, total) => {
                 if (!modelLoaded) {
                     modelLoadingDiv.classList.remove('hidden');
@@ -371,8 +370,8 @@
                 modelLoadingDiv.classList.add('hidden');
                 modelLoadingDiv.classList.remove('flex');
                 
-                // رسالة واضحة في حالة حدوث أي مشكلة أخرى
-                showAlert('فشل الاتصال بملفات الذكاء الاصطناعي. تم تحديث الرابط بنجاح الآن. برجاء التأكد من عمل تحديث للصفحة (Ctrl+F5).');
+                // رسالة واضحة في حالة حدوث أي مشكلة مع طباعة تفاصيل الخطأ
+                showAlert('حدث خطأ أثناء الاتصال: ' + (error.message || 'يرجى المحاولة مرة أخرى.'));
             }
 
             updateUI();
