@@ -12,8 +12,7 @@
     <script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/FileSaver.js/2.0.5/FileSaver.min.js"></script>
     
-    <!-- تم التحديث للنسخة 1.7.0 لحل مشكلة الملفات المحذوفة من NPM -->
-    <script src="https://cdn.jsdelivr.net/npm/@imgly/background-removal@1.7.0/dist/browser/bundle.umd.min.js"></script>
+    <!-- تم إزالة استدعاء السكريبت القديم وسنستخدم الـ Import Type Module بالأسفل -->
 
     <style>
         body {
@@ -136,7 +135,11 @@
         </div>
     </div>
 
-    <script>
+    <!-- استدعاء المكتبة بنظام Modules كأحدث طريقة -->
+    <script type="module">
+        // استيراد دالة الذكاء الاصطناعي مباشرة من سيرفر ESM (باستخدام التصدير المسمى)
+        import { removeBackground } from "https://esm.sh/@imgly/background-removal@1.7.0";
+
         const dropArea = document.getElementById('drop-area');
         const fileInput = document.getElementById('file-input');
         const gallery = document.getElementById('gallery');
@@ -153,7 +156,6 @@
         let isProcessing = false;
         let modelLoaded = false;
 
-        // تم مسح مسار publicPath ليتم الاعتماد على السيرفر الرسمي للمكتبة وتجنب أخطاء 404
         const config = {
             progress: (key, current, total) => {
                 if (!modelLoaded) {
@@ -174,7 +176,94 @@
             }
         };
 
-        function showAlert(message) {
+        // ... [نفس باقي دوال UI والتعامل مع الملفات] ...
+
+        // ربط الدوال للوصول إليها عالمياً من عناصر HTML (لأننا في module)
+        window.processSingleImage = async function processSingleImage(id) {
+            const imgData = imagesData.find(img => img.id === id);
+            if (!imgData || imgData.status === 'processing' || imgData.status === 'done') return;
+
+            imgData.status = 'processing';
+            const overlay = document.getElementById(`overlay-${id}`);
+            const btnProcess = document.getElementById(`btn-process-${id}`);
+            const btnDownload = document.getElementById(`btn-download-${id}`);
+            const statusBadge = document.getElementById(`status-badge-${id}`);
+            
+            overlay.classList.remove('hidden');
+            btnProcess.classList.add('hidden');
+            
+            try {
+                // استدعاء دالة الإزالة بالاسم الصحيح
+                const blob = await removeBackground(imgData.file, config);
+                
+                modelLoaded = true;
+                modelLoadingDiv.classList.add('hidden');
+                modelLoadingDiv.classList.remove('flex');
+                progressBarFill.classList.remove('animate-pulse');
+
+                const processedUrl = URL.createObjectURL(blob);
+                imgData.processedUrl = processedUrl;
+                imgData.status = 'done';
+
+                const displayImgElement = document.getElementById(`img-${id}`);
+                displayImgElement.src = processedUrl;
+                
+                overlay.classList.add('hidden');
+                btnDownload.classList.remove('hidden');
+                
+                statusBadge.textContent = 'تم التفريغ';
+                statusBadge.className = 'absolute top-3 right-3 px-3 py-1 rounded-full text-xs font-bold bg-green-500 text-white shadow-md';
+                statusBadge.classList.remove('hidden');
+
+            } catch (error) {
+                console.error("Error processing image Details:", error);
+                imgData.status = 'error';
+                
+                overlay.classList.add('hidden');
+                btnProcess.classList.remove('hidden');
+                
+                statusBadge.textContent = 'حدث خطأ';
+                statusBadge.className = 'absolute top-3 right-3 px-3 py-1 rounded-full text-xs font-bold bg-rose-500 text-white shadow-md';
+                statusBadge.classList.remove('hidden');
+
+                modelLoadingDiv.classList.add('hidden');
+                modelLoadingDiv.classList.remove('flex');
+                
+                showAlert('حدث خطأ أثناء الاتصال: ' + (error.message || 'يرجى المحاولة مرة أخرى.'));
+            }
+
+            updateUI();
+        }
+
+        window.downloadSingleImage = function(id) {
+            const imgData = imagesData.find(img => img.id === id);
+            if (!imgData || imgData.status !== 'done') return;
+
+            const a = document.createElement('a');
+            a.href = imgData.processedUrl;
+            const originalName = imgData.file.name;
+            const nameWithoutExt = originalName.substring(0, originalName.lastIndexOf('.')) || originalName;
+            a.download = `${nameWithoutExt}-no-bg.png`;
+            document.body.appendChild(a);
+            a.click();
+            document.body.removeChild(a);
+        }
+
+        window.removeImage = function(id) {
+            if(isProcessing) {
+                const img = imagesData.find(i => i.id === id);
+                if(img && img.status === 'processing') return;
+            }
+
+            imagesData = imagesData.filter(img => img.id !== id);
+            const card = document.getElementById(`card-${id}`);
+            if (card) {
+                card.remove();
+            }
+            updateUI();
+        }
+
+        window.showAlert = function(message) {
             document.getElementById('alert-message').innerText = message;
             document.getElementById('custom-alert').classList.remove('hidden');
         }
@@ -272,14 +361,14 @@
 
                 <div class="p-4 bg-white border-t border-slate-100 flex justify-between items-center mt-auto">
                     <div class="flex gap-2" id="action-buttons-${imgData.id}">
-                         <button id="btn-process-${imgData.id}" class="process-btn px-4 py-2 bg-cyan-50 text-cyan-600 hover:bg-cyan-600 hover:text-white rounded-xl font-semibold transition flex items-center gap-2">
+                         <button onclick="processSingleImage('${imgData.id}')" id="btn-process-${imgData.id}" class="process-btn px-4 py-2 bg-cyan-50 text-cyan-600 hover:bg-cyan-600 hover:text-white rounded-xl font-semibold transition flex items-center gap-2">
                             <i class="fa-solid fa-wand-magic-sparkles"></i> تفريغ
                         </button>
-                        <button id="btn-download-${imgData.id}" class="download-btn px-4 py-2 bg-green-50 text-green-600 hover:bg-green-600 hover:text-white rounded-xl font-semibold transition hidden flex items-center gap-2">
+                        <button onclick="downloadSingleImage('${imgData.id}')" id="btn-download-${imgData.id}" class="download-btn px-4 py-2 bg-green-50 text-green-600 hover:bg-green-600 hover:text-white rounded-xl font-semibold transition hidden flex items-center gap-2">
                             <i class="fa-solid fa-download"></i> تحميل
                         </button>
                     </div>
-                    <button id="btn-remove-${imgData.id}" class="remove-btn p-2 text-rose-400 hover:bg-rose-50 hover:text-rose-600 rounded-xl transition">
+                    <button onclick="removeImage('${imgData.id}')" id="btn-remove-${imgData.id}" class="remove-btn p-2 text-rose-400 hover:bg-rose-50 hover:text-rose-600 rounded-xl transition">
                         <i class="fa-solid fa-trash-can text-lg"></i>
                     </button>
                 </div>
@@ -287,10 +376,6 @@
 
             imgData.element = card;
             gallery.appendChild(card);
-
-            card.querySelector(`#btn-process-${imgData.id}`).addEventListener('click', () => processSingleImage(imgData.id));
-            card.querySelector(`#btn-download-${imgData.id}`).addEventListener('click', () => downloadSingleImage(imgData.id));
-            card.querySelector(`#btn-remove-${imgData.id}`).addEventListener('click', () => removeImage(imgData.id));
         }
 
         function updateUI() {
@@ -318,65 +403,6 @@
             }
         }
 
-        async function processSingleImage(id) {
-            const imgData = imagesData.find(img => img.id === id);
-            if (!imgData || imgData.status === 'processing' || imgData.status === 'done') return;
-
-            imgData.status = 'processing';
-            const overlay = document.getElementById(`overlay-${id}`);
-            const btnProcess = document.getElementById(`btn-process-${id}`);
-            const btnDownload = document.getElementById(`btn-download-${id}`);
-            const statusBadge = document.getElementById(`status-badge-${id}`);
-            
-            overlay.classList.remove('hidden');
-            btnProcess.classList.add('hidden');
-            
-            try {
-                // استدعاء مكتبة الذكاء الاصطناعي لإزالة الخلفية
-                const blob = await imglyRemoveBackground(imgData.file, config);
-                
-                // إخفاء شريط التحميل بعد الانتهاء
-                modelLoaded = true;
-                modelLoadingDiv.classList.add('hidden');
-                modelLoadingDiv.classList.remove('flex');
-                progressBarFill.classList.remove('animate-pulse');
-
-                // تحويل النتيجة لملف مرئي
-                const processedUrl = URL.createObjectURL(blob);
-                imgData.processedUrl = processedUrl;
-                imgData.status = 'done';
-
-                const displayImgElement = document.getElementById(`img-${id}`);
-                displayImgElement.src = processedUrl;
-                
-                overlay.classList.add('hidden');
-                btnDownload.classList.remove('hidden');
-                
-                statusBadge.textContent = 'تم التفريغ';
-                statusBadge.className = 'absolute top-3 right-3 px-3 py-1 rounded-full text-xs font-bold bg-green-500 text-white shadow-md';
-                statusBadge.classList.remove('hidden');
-
-            } catch (error) {
-                console.error("Error processing image Details:", error);
-                imgData.status = 'error';
-                
-                overlay.classList.add('hidden');
-                btnProcess.classList.remove('hidden');
-                
-                statusBadge.textContent = 'حدث خطأ';
-                statusBadge.className = 'absolute top-3 right-3 px-3 py-1 rounded-full text-xs font-bold bg-rose-500 text-white shadow-md';
-                statusBadge.classList.remove('hidden');
-
-                modelLoadingDiv.classList.add('hidden');
-                modelLoadingDiv.classList.remove('flex');
-                
-                // رسالة واضحة في حالة حدوث أي مشكلة مع طباعة تفاصيل الخطأ
-                showAlert('حدث خطأ أثناء الاتصال: ' + (error.message || 'يرجى المحاولة مرة أخرى.'));
-            }
-
-            updateUI();
-        }
-
         async function processAllImages() {
             if (isProcessing) return;
             isProcessing = true;
@@ -385,24 +411,10 @@
             const pendingImages = imagesData.filter(img => img.status === 'pending' || img.status === 'error');
             
             for (const img of pendingImages) {
-                await processSingleImage(img.id);
+                await window.processSingleImage(img.id);
             }
 
             isProcessing = false;
-            updateUI();
-        }
-
-        function removeImage(id) {
-            if(isProcessing) {
-                const img = imagesData.find(i => i.id === id);
-                if(img && img.status === 'processing') return;
-            }
-
-            imagesData = imagesData.filter(img => img.id !== id);
-            const card = document.getElementById(`card-${id}`);
-            if (card) {
-                card.remove();
-            }
             updateUI();
         }
 
@@ -411,20 +423,6 @@
             imagesData = [];
             gallery.innerHTML = '';
             updateUI();
-        }
-
-        function downloadSingleImage(id) {
-            const imgData = imagesData.find(img => img.id === id);
-            if (!imgData || imgData.status !== 'done') return;
-
-            const a = document.createElement('a');
-            a.href = imgData.processedUrl;
-            const originalName = imgData.file.name;
-            const nameWithoutExt = originalName.substring(0, originalName.lastIndexOf('.')) || originalName;
-            a.download = `${nameWithoutExt}-no-bg.png`;
-            document.body.appendChild(a);
-            a.click();
-            document.body.removeChild(a);
         }
 
         async function downloadAll() {
