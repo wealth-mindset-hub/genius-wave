@@ -3,24 +3,27 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>أداة إزالة الخلفية المتعددة</title>
+    <title>أداة إزالة الخلفية الذكية (HuggingFace)</title>
+    
     <!-- تضمين Tailwind CSS للتصميم -->
     <script src="https://cdn.tailwindcss.com"></script>
-    <!-- تضمين مكتبة @imgly/background-removal -->
-    <script src="https://cdn.jsdelivr.net/npm/@imgly/background-removal@1.4.5/dist/browser/bundle.umd.min.js"></script>
+    
     <!-- تضمين FontAwesome للأيقونات -->
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     
+    <!-- تضمين مكتبات التحميل المضغوط -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/FileSaver.js/2.0.5/FileSaver.min.js"></script>
+
     <style>
         body {
             font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
-            background-color: #f3f4f6;
+            background-color: #f8fafc;
         }
         
-        /* تأثيرات التحميل والتجهيز */
         .loader {
             border: 4px solid #f3f3f3;
-            border-top: 4px solid #3b82f6;
+            border-top: 4px solid #6366f1; /* لون بنفسجي/نيلي */
             border-radius: 50%;
             width: 30px;
             height: 30px;
@@ -31,114 +34,112 @@
             100% { transform: rotate(360deg); }
         }
 
-        /* تنسيق منطقة الإسقاط (Drag and Drop) */
         .drop-zone {
             transition: all 0.3s ease;
-            border: 2px dashed #9ca3af;
+            border: 2px dashed #94a3b8;
         }
         .drop-zone.dragover {
-            background-color: #e0f2fe;
-            border-color: #3b82f6;
+            background-color: #e0e7ff;
+            border-color: #4f46e5;
             transform: scale(1.02);
         }
 
-        /* خلفية شفافة لعرض الصور بدون خلفية بوضوح */
         .transparent-bg {
             background-image: 
-                linear-gradient(45deg, #ccc 25%, transparent 25%), 
-                linear-gradient(135deg, #ccc 25%, transparent 25%),
-                linear-gradient(45deg, transparent 75%, #ccc 75%),
-                linear-gradient(135deg, transparent 75%, #ccc 75%);
-            background-size: 20px 20px; /* حجم المربعات */
-            background-position: 0 0, 10px 0, 10px -10px, 0px 10px; /* ترتيب المربعات */
+                linear-gradient(45deg, #cbd5e1 25%, transparent 25%), 
+                linear-gradient(135deg, #cbd5e1 25%, transparent 25%),
+                linear-gradient(45deg, transparent 75%, #cbd5e1 75%),
+                linear-gradient(135deg, transparent 75%, #cbd5e1 75%);
+            background-size: 20px 20px;
+            background-position: 0 0, 10px 0, 10px -10px, 0px 10px;
             background-color: white;
         }
 
-        /* تنسيق حاوية الصورة */
         .image-card {
-            transition: transform 0.2s;
+            transition: transform 0.2s, box-shadow 0.2s;
         }
         .image-card:hover {
             transform: translateY(-5px);
-            box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -2px rgba(0, 0, 0, 0.05);
+            box-shadow: 0 10px 15px -3px rgba(99, 102, 241, 0.2);
         }
     </style>
 </head>
 <body class="min-h-screen p-4 md:p-8">
 
-    <div class="max-w-6xl mx-auto bg-white rounded-2xl shadow-xl overflow-hidden">
+    <div class="max-w-6xl mx-auto bg-white rounded-3xl shadow-2xl overflow-hidden border border-indigo-50">
         
-        <!-- الهيدر -->
-        <header class="bg-blue-600 text-white p-6 text-center">
-            <h1 class="text-3xl font-bold mb-2"><i class="fa-solid fa-wand-magic-sparkles mr-2"></i> مزيل الخلفية الذكي</h1>
-            <p class="text-blue-100">ارفع صورك هنا وسيتم إزالة الخلفية منها تلقائياً وبسرعة داخل المتصفح.</p>
+        <header class="bg-gradient-to-r from-indigo-600 to-purple-600 text-white p-6 text-center shadow-md">
+            <h1 class="text-3xl font-bold mb-2"><i class="fa-solid fa-scissors mr-2"></i> مزيل الخلفية الاحترافي</h1>
+            <p class="text-indigo-100">يعمل بالذكاء الاصطناعي (Transformers.js) - سرعة عالية وحماية للخصوصية.</p>
         </header>
 
-        <div class="p-6">
+        <div class="p-6 md:p-8">
             
-            <!-- رسالة تحميل نموذج الذكاء الاصطناعي -->
-            <div id="model-loading" class="mb-6 p-5 bg-yellow-50 border border-yellow-200 rounded-lg hidden flex-col gap-3">
-                <div class="flex items-center gap-3 text-yellow-800 font-bold">
+            <div id="model-loading" class="mb-8 p-5 bg-indigo-50 border border-indigo-200 rounded-xl hidden flex-col gap-3 shadow-inner">
+                <div class="flex items-center gap-3 text-indigo-800 font-bold">
                     <div class="loader" style="width: 20px; height: 20px; border-width: 3px;"></div>
                     <span>جاري تحميل ملفات الذكاء الاصطناعي للمرة الأولى...</span>
                 </div>
-                <!-- شريط التقدم -->
-                <div class="w-full bg-yellow-200 rounded-full h-3 overflow-hidden shadow-inner">
-                    <div id="progress-bar-fill" class="bg-blue-600 h-3 rounded-full transition-all duration-300 ease-out" style="width: 0%"></div>
+                <div class="w-full bg-indigo-200 rounded-full h-4 overflow-hidden shadow-inner relative">
+                    <div id="progress-bar-fill" class="bg-indigo-600 h-4 rounded-full transition-all duration-300 ease-out" style="width: 0%"></div>
                 </div>
-                <div id="loading-details" class="text-sm text-yellow-700 text-right font-medium">جاري التحضير... 0%</div>
+                <div id="loading-details" class="text-sm text-indigo-700 font-medium">جاري التحضير... 0%</div>
                 
-                <p class="text-xs text-yellow-600 mt-2 text-center border-t border-yellow-200 pt-2 font-bold">
-                    <i class="fa-solid fa-circle-exclamation"></i> 
-                    ملاحظة: إذا لم يبدأ التحميل، فهذا لأن متصفحك يمنع تحميل الذكاء الاصطناعي بسبب فتح الملف محلياً. <br>
-                    <span class="text-red-600">الحل:</span> جرب فتح الملف بمتصفح Firefox، أو تشغيله عبر (Live Server).
+                <p class="text-xs text-indigo-600 mt-2 text-center border-t border-indigo-200 pt-2">
+                    <i class="fa-solid fa-cloud-arrow-down"></i> يتم التحميل من سيرفرات HuggingFace (أسرع وأكثر استقراراً).
                 </p>
             </div>
 
-            <!-- منطقة الإسقاط ورفع الصور -->
-            <div id="drop-area" class="drop-zone p-10 rounded-xl text-center cursor-pointer bg-gray-50 hover:bg-gray-100 flex flex-col items-center justify-center gap-4 mb-8">
-                <i class="fa-solid fa-cloud-arrow-up text-5xl text-gray-400"></i>
-                <h3 class="text-xl font-semibold text-gray-700">اسحب وأفلت الصور هنا</h3>
-                <p class="text-gray-500">أو اضغط لاختيار عدة صور (JPG, PNG, WEBP, BMP, والمزيد)</p>
+            <div class="mb-6 flex flex-wrap gap-4 items-center bg-gray-50 p-4 rounded-xl border border-gray-200 justify-center">
+                <label class="font-semibold text-gray-700"><i class="fa-solid fa-microchip text-indigo-500 mr-1"></i> دقة المعالجة:</label>
+                <select id="model-selector" class="border border-gray-300 rounded-lg px-4 py-2 bg-white text-gray-700 shadow-sm focus:outline-none focus:border-indigo-500 font-medium cursor-pointer">
+                    <option value="Xenova/modnet">⚡ سريع جداً (ممتاز للأشخاص - 10 ميجا)</option>
+                    <option value="briaai/RMBG-1.4" selected>✨ جودة عالية (لكل شيء - 40 ميجا)</option>
+                </select>
+            </div>
+
+            <div id="drop-area" class="drop-zone p-12 rounded-2xl text-center cursor-pointer bg-slate-50 hover:bg-slate-100 flex flex-col items-center justify-center gap-4 mb-8">
+                <i class="fa-solid fa-images text-6xl text-indigo-300"></i>
+                <h3 class="text-2xl font-bold text-slate-700">اسحب وأفلت الصور هنا</h3>
+                <p class="text-slate-500">أو اضغط لاختيار مجموعة صور للبدء</p>
                 <input type="file" id="file-input" multiple accept="image/*" class="hidden">
-                <button class="px-6 py-2 bg-blue-600 text-white rounded-full hover:bg-blue-700 transition shadow-md">
-                    تصفح الملفات
+                <button class="px-8 py-3 bg-indigo-600 text-white font-bold rounded-full hover:bg-indigo-700 transition shadow-lg hover:shadow-indigo-500/30 transform hover:-translate-y-1 mt-2">
+                    اختيار الملفات
                 </button>
             </div>
 
-            <!-- شريط الأدوات (يظهر عند وجود صور) -->
-            <div id="toolbar" class="flex flex-wrap justify-between items-center mb-6 hidden gap-4 p-4 bg-gray-50 rounded-lg border border-gray-200">
-                <div class="font-semibold text-gray-700">
-                    <span id="total-count">0</span> صورة / صور
+            <div id="toolbar" class="flex flex-wrap justify-between items-center mb-6 hidden gap-4 p-4 bg-indigo-50 rounded-xl border border-indigo-100">
+                <div class="font-bold text-indigo-900 bg-white px-4 py-2 rounded-lg shadow-sm">
+                    العدد: <span id="total-count" class="text-indigo-600 text-lg">0</span>
                 </div>
                 <div class="flex gap-2">
-                    <button id="process-all-btn" class="px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 transition flex items-center gap-2">
-                        <i class="fa-solid fa-play"></i> معالجة الكل
+                    <button id="process-all-btn" class="px-5 py-2 bg-indigo-600 text-white font-bold rounded-lg hover:bg-indigo-700 transition shadow-md">
+                        <i class="fa-solid fa-play"></i> تفريغ الكل
                     </button>
-                    <button id="download-all-btn" class="px-4 py-2 bg-purple-600 text-white rounded-lg hover:bg-purple-700 transition flex items-center gap-2 hidden">
+                    <button id="download-all-btn" class="px-5 py-2 bg-emerald-500 text-white font-bold rounded-lg hover:bg-emerald-600 transition shadow-md hidden">
                         <i class="fa-solid fa-download"></i> تحميل الكل (ZIP)
                     </button>
-                    <button id="clear-all-btn" class="px-4 py-2 bg-red-100 text-red-600 rounded-lg hover:bg-red-200 transition flex items-center gap-2">
-                        <i class="fa-solid fa-trash"></i> مسح الكل
+                    <button id="clear-all-btn" class="px-5 py-2 bg-red-100 text-red-600 font-bold rounded-lg hover:bg-red-200 transition">
+                        <i class="fa-solid fa-trash"></i> مسح
                     </button>
                 </div>
             </div>
 
             <!-- شبكة عرض الصور -->
-            <div id="gallery" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
-                <!-- الصور ستضاف هنا عبر JavaScript -->
-            </div>
+            <div id="gallery" class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-6"></div>
 
         </div>
     </div>
 
-    <!-- تضمين مكتبة JSZip لتحميل الصور في ملف واحد -->
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js"></script>
-    <!-- تضمين مكتبة FileSaver لحفظ الملف المضغوط -->
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/FileSaver.js/2.0.5/FileSaver.min.js"></script>
+    <script type="module">
+        // استخدام مكتبة Transformers.js (الإصدار المستقر)
+        import { pipeline, env, RawImage } from 'https://cdn.jsdelivr.net/npm/@xenova/transformers@2.17.1';
 
-    <script>
-        // المتغيرات الأساسية
+        // إعدادات المكتبة لضمان التحميل من الإنترنت وعدم البحث عن ملفات محلية
+        env.allowLocalModels = false;
+        env.useBrowserCache = true;
+
+        // المتغيرات 
         const dropArea = document.getElementById('drop-area');
         const fileInput = document.getElementById('file-input');
         const gallery = document.getElementById('gallery');
@@ -150,50 +151,15 @@
         const modelLoadingDiv = document.getElementById('model-loading');
         const progressBarFill = document.getElementById('progress-bar-fill');
         const loadingDetails = document.getElementById('loading-details');
+        const modelSelector = document.getElementById('model-selector');
 
-        // مصفوفة لتخزين بيانات الصور
         let imagesData = [];
-        let modelLoaded = false;
+        let segmenter = null;
+        let currentLoadedModel = null;
         let isProcessing = false;
 
-        // --- إعدادات وتكوين مكتبة imgly ---
-        const config = {
-            // تم تغيير المسار ليقرأ من المجلد المحلي (assets) الموجود بجوار ملف HTML
-            publicPath: './assets/', 
-            debug: true, 
-            progress: (key, current, total) => {
-                if(!modelLoaded) {
-                     // تحديث شريط التقدم إذا كان المجموع معروفاً
-                     if (total > 0) {
-                         const percent = Math.round((current / total) * 100);
-                         if(progressBarFill) progressBarFill.style.width = `${percent}%`;
-                         
-                         if(loadingDetails) {
-                             let actionText = key.includes('fetch') ? "تنزيل ملفات الذكاء الاصطناعي" : "تجهيز المعالج";
-                             loadingDetails.innerText = `${actionText}: ${percent}%`;
-                         }
-                     } else {
-                         // إذا كان المجموع غير معروف، نعرض حجم ما تم تحميله بالميجا بايت
-                         if(loadingDetails) {
-                             const loadedMB = (current / (1024 * 1024)).toFixed(1);
-                             let actionText = key.includes('fetch') ? "جاري التنزيل" : "جاري المعالجة";
-                             loadingDetails.innerText = `${actionText}... تم تحميل ${loadedMB} ميجابايت`;
-                         }
-                         // جعل شريط التقدم يتحرك كأنه غير محدد
-                         if(progressBarFill) {
-                             progressBarFill.style.width = '100%';
-                             progressBarFill.classList.add('animate-pulse');
-                         }
-                     }
-                }
-            }
-        };
-
-        // --- وظائف مساعدة ---
-        // توليد معرف فريد للصورة
         const generateId = () => Math.random().toString(36).substr(2, 9);
 
-        // تحويل File إلى Data URL لعرضه
         const readFileAsDataURL = (file) => {
             return new Promise((resolve, reject) => {
                 const reader = new FileReader();
@@ -203,15 +169,10 @@
             });
         };
 
-        // --- التعامل مع الأحداث (Drag & Drop) ---
+        // أحداث السحب والإفلات
         ['dragenter', 'dragover', 'dragleave', 'drop'].forEach(eventName => {
-            dropArea.addEventListener(eventName, preventDefaults, false);
+            dropArea.addEventListener(eventName, e => { e.preventDefault(); e.stopPropagation(); }, false);
         });
-
-        function preventDefaults(e) {
-            e.preventDefault();
-            e.stopPropagation();
-        }
 
         ['dragenter', 'dragover'].forEach(eventName => {
             dropArea.addEventListener(eventName, () => dropArea.classList.add('dragover'), false);
@@ -221,105 +182,69 @@
             dropArea.addEventListener(eventName, () => dropArea.classList.remove('dragover'), false);
         });
 
-        dropArea.addEventListener('drop', handleDrop, false);
+        dropArea.addEventListener('drop', e => handleFiles(e.dataTransfer.files), false);
         dropArea.addEventListener('click', () => fileInput.click());
-        fileInput.addEventListener('change', handleFilesSelect);
+        fileInput.addEventListener('change', e => { handleFiles(e.target.files); fileInput.value = ''; });
 
-        function handleDrop(e) {
-            const dt = e.dataTransfer;
-            const files = dt.files;
-            handleFiles(files);
-        }
-
-        function handleFilesSelect(e) {
-            const files = e.target.files;
-            handleFiles(files);
-            // تفريغ المدخل للسماح باختيار نفس الملفات مرة أخرى إذا لزم الأمر
-            fileInput.value = '';
-        }
-
-        // --- معالجة الملفات المضافة ---
         async function handleFiles(files) {
             if (files.length === 0) return;
-
             const imageFiles = Array.from(files).filter(file => file.type.startsWith('image/'));
             
-            if (imageFiles.length === 0) {
-                alert('الرجاء اختيار ملفات صور فقط.');
-                return;
-            }
-
             for (const file of imageFiles) {
-                const id = generateId();
                 const dataUrl = await readFileAsDataURL(file);
-                
                 const imgObj = {
-                    id: id,
+                    id: generateId(),
                     file: file,
                     originalUrl: dataUrl,
                     processedUrl: null,
-                    status: 'pending', // pending, processing, done, error
-                    element: null
+                    status: 'pending'
                 };
-                
                 imagesData.push(imgObj);
                 createImageCard(imgObj);
             }
-
             updateUI();
         }
 
-        // --- إنشاء بطاقة الصورة في الواجهة ---
         function createImageCard(imgData) {
             const card = document.createElement('div');
-            card.className = 'image-card bg-white border border-gray-200 rounded-xl overflow-hidden flex flex-col relative';
+            card.className = 'image-card bg-white border border-gray-200 rounded-2xl overflow-hidden flex flex-col relative shadow-sm';
             card.id = `card-${imgData.id}`;
 
             card.innerHTML = `
-                <!-- حاوية الصورة -->
-                <div class="relative h-48 transparent-bg flex items-center justify-center bg-gray-100 overflow-hidden group">
-                    <img src="${imgData.originalUrl}" alt="Original" class="max-w-full max-h-full object-contain transition-opacity duration-300" id="img-${imgData.id}">
+                <div class="relative h-56 transparent-bg flex items-center justify-center bg-gray-100 overflow-hidden group">
+                    <img src="${imgData.originalUrl}" class="max-w-full max-h-full object-contain transition-opacity duration-300" id="img-${imgData.id}">
                     
-                    <!-- تراكب الحالة (Processing) -->
-                    <div id="overlay-${imgData.id}" class="absolute inset-0 bg-black/50 flex flex-col items-center justify-center text-white hidden">
-                        <div class="loader mb-2"></div>
-                        <span class="text-sm font-semibold">جاري المعالجة...</span>
+                    <div id="overlay-${imgData.id}" class="absolute inset-0 bg-indigo-900/60 flex flex-col items-center justify-center text-white hidden backdrop-blur-sm transition-all">
+                        <div class="loader mb-3 border-indigo-200 border-top-indigo-500"></div>
+                        <span class="text-sm font-bold tracking-wide">جاري التفريغ...</span>
                     </div>
 
-                    <!-- شريط الحالة (نجاح/خطأ) -->
-                    <div id="status-badge-${imgData.id}" class="absolute top-2 right-2 px-2 py-1 rounded text-xs font-bold hidden">
-                    </div>
+                    <div id="status-badge-${imgData.id}" class="absolute top-3 right-3 px-3 py-1 rounded-full text-xs font-bold hidden shadow-md"></div>
                 </div>
 
-                <!-- شريط أدوات الصورة -->
-                <div class="p-3 bg-white border-t border-gray-100 flex justify-between items-center mt-auto">
+                <div class="p-4 bg-white border-t border-gray-100 flex justify-between items-center mt-auto">
                     <div class="flex gap-2">
-                         <button onclick="processSingleImage('${imgData.id}')" id="btn-process-${imgData.id}" class="p-2 text-blue-600 hover:bg-blue-50 rounded-lg transition" title="إزالة الخلفية">
-                            <i class="fa-solid fa-wand-magic-sparkles"></i>
+                         <button data-id="${imgData.id}" class="btn-process px-4 py-2 bg-indigo-50 text-indigo-600 hover:bg-indigo-600 hover:text-white font-semibold rounded-xl transition flex items-center gap-2" title="إزالة الخلفية">
+                            <i class="fa-solid fa-wand-magic-sparkles"></i> تفريغ
                         </button>
-                        <button onclick="downloadSingleImage('${imgData.id}')" id="btn-download-${imgData.id}" class="p-2 text-green-600 hover:bg-green-50 rounded-lg transition hidden" title="تحميل">
-                            <i class="fa-solid fa-download"></i>
+                        <button data-id="${imgData.id}" class="btn-download px-4 py-2 bg-emerald-50 text-emerald-600 hover:bg-emerald-600 hover:text-white font-semibold rounded-xl transition flex items-center gap-2 hidden" title="تحميل">
+                            <i class="fa-solid fa-download"></i> حفظ
                         </button>
                     </div>
-                    <button onclick="removeImage('${imgData.id}')" class="p-2 text-red-500 hover:bg-red-50 rounded-lg transition" title="حذف">
+                    <button data-id="${imgData.id}" class="btn-remove p-2 text-red-400 hover:bg-red-50 hover:text-red-600 rounded-xl transition" title="حذف">
                         <i class="fa-solid fa-trash-can"></i>
                     </button>
                 </div>
             `;
-
-            imgData.element = card;
             gallery.appendChild(card);
         }
 
-        // --- تحديث الواجهة العامة (عداد، أشرطة الأدوات) ---
         function updateUI() {
             totalCountSpan.innerText = imagesData.length;
-            
             if (imagesData.length > 0) {
                 toolbar.classList.remove('hidden');
-                
-                // التحقق مما إذا كانت كل الصور قد تمت معالجتها لإظهار زر تحميل الكل
                 const allDone = imagesData.length > 0 && imagesData.every(img => img.status === 'done');
+                
                 if (allDone) {
                     downloadAllBtn.classList.remove('hidden');
                     processAllBtn.classList.add('hidden');
@@ -328,85 +253,142 @@
                     processAllBtn.classList.remove('hidden');
                 }
 
-                // تعطيل الأزرار أثناء المعالجة
                 processAllBtn.disabled = isProcessing;
                 processAllBtn.classList.toggle('opacity-50', isProcessing);
-                processAllBtn.classList.toggle('cursor-not-allowed', isProcessing);
-                clearAllBtn.disabled = isProcessing;
-                
             } else {
                 toolbar.classList.add('hidden');
             }
         }
 
-        // --- معالجة صورة واحدة (إزالة الخلفية) ---
+        async function loadAiModel() {
+            const selectedModel = modelSelector.value;
+            
+            // إذا كان الموديل محمل بالفعل وهو نفس الموديل المختار، فلا تفعل شيئاً
+            if (segmenter && currentLoadedModel === selectedModel) return;
+
+            modelLoadingDiv.classList.remove('hidden');
+            modelLoadingDiv.classList.add('flex');
+            currentLoadedModel = selectedModel;
+            progressBarFill.style.width = '0%';
+            loadingDetails.innerText = 'بدء الاتصال...';
+
+            try {
+                segmenter = await pipeline('image-segmentation', selectedModel, {
+                    progress_callback: (info) => {
+                        if (info.status === 'progress') {
+                            const percent = Math.round(info.progress);
+                            progressBarFill.style.width = percent + '%';
+                            loadingDetails.innerText = `جاري التنزيل: ${percent}%`;
+                        } else if (info.status === 'ready') {
+                            loadingDetails.innerText = `تم التحميل بنجاح!`;
+                            setTimeout(() => {
+                                modelLoadingDiv.classList.add('hidden');
+                                modelLoadingDiv.classList.remove('flex');
+                            }, 1000);
+                        }
+                    }
+                });
+            } catch (error) {
+                console.error("Model Load Error:", error);
+                loadingDetails.innerText = `حدث خطأ في التحميل. يرجى تحديث الصفحة.`;
+                alert("فشل تحميل الذكاء الاصطناعي. تأكد من اتصالك بالإنترنت.");
+                throw error;
+            }
+        }
+
         async function processSingleImage(id) {
             const imgData = imagesData.find(img => img.id === id);
             if (!imgData || imgData.status === 'processing' || imgData.status === 'done') return;
 
-            // تحديث حالة الواجهة للصورة
             imgData.status = 'processing';
             const overlay = document.getElementById(`overlay-${id}`);
-            const btnProcess = document.getElementById(`btn-process-${id}`);
-            const btnDownload = document.getElementById(`btn-download-${id}`);
+            const btnProcess = document.querySelector(`.btn-process[data-id="${id}"]`);
+            const btnDownload = document.querySelector(`.btn-download[data-id="${id}"]`);
             const statusBadge = document.getElementById(`status-badge-${id}`);
             
             overlay.classList.remove('hidden');
             btnProcess.classList.add('hidden');
-            
-            // إظهار رسالة التحميل العامة إذا كانت هذه أول مرة
-            if (!modelLoaded) {
-                modelLoadingDiv.classList.remove('hidden');
-            }
 
             try {
-                // *** استدعاء مكتبة imgly لإزالة الخلفية ***
-                // تستقبل الملف وتعيد Blob للصورة الناتجة
-                const blob = await imglyRemoveBackground(imgData.file, config);
-                
-                modelLoaded = true;
-                modelLoadingDiv.classList.add('hidden');
+                // 1. التأكد من تحميل الموديل
+                await loadAiModel();
 
-                // إنشاء URL للـ Blob الناتج לעرضه
+                // 2. تحميل الصورة لاستخراج الأبعاد
+                const imgElement = document.createElement('img');
+                imgElement.src = imgData.originalUrl;
+                await new Promise(r => imgElement.onload = r);
+
+                // 3. تحويل الصورة لصيغة يفهمها الذكاء الاصطناعي
+                const rawImage = await RawImage.fromURL(imgData.originalUrl);
+
+                // 4. تنفيذ العزل
+                const result = await segmenter(rawImage);
+                // النتيجة تحتوي على قناع (Mask) يحدد الخلفية
+                const maskImage = result[0].mask; 
+                const maskCanvas = maskImage.toCanvas();
+
+                // 5. دمج الصورة الأصلية مع القناع الشفاف
+                const canvas = document.createElement('canvas');
+                canvas.width = imgElement.naturalWidth;
+                canvas.height = imgElement.naturalHeight;
+                const ctx = canvas.getContext('2d');
+
+                // رسم الصورة الأصلية
+                ctx.drawImage(imgElement, 0, 0);
+                const originalImageData = ctx.getImageData(0, 0, canvas.width, canvas.height);
+
+                // تجهيز القناع بنفس الأبعاد
+                const tempCanvas = document.createElement('canvas');
+                tempCanvas.width = canvas.width;
+                tempCanvas.height = canvas.height;
+                const tempCtx = tempCanvas.getContext('2d');
+                tempCtx.drawImage(maskCanvas, 0, 0, tempCanvas.width, tempCanvas.height);
+                const maskImageData = tempCtx.getImageData(0, 0, tempCanvas.width, tempCanvas.height);
+
+                // تطبيق الشفافية (Alpha Channel) بيكسل ببيكسل
+                for (let i = 0; i < originalImageData.data.length; i += 4) {
+                    // نستخدم القناع لتحديد مستوى شفافية كل بيكسل
+                    originalImageData.data[i + 3] = maskImageData.data[i]; 
+                }
+
+                ctx.putImageData(originalImageData, 0, 0);
+
+                // 6. استخراج الصورة النهائية
+                const blob = await new Promise(resolve => canvas.toBlob(resolve, 'image/png'));
                 const processedUrl = URL.createObjectURL(blob);
+
                 imgData.processedUrl = processedUrl;
                 imgData.status = 'done';
 
-                // تحديث الصورة في الواجهة
-                const imgElement = document.getElementById(`img-${id}`);
-                imgElement.src = processedUrl;
-                
-                // إظهار علامة النجاح وزر التحميل
+                // تحديث الواجهة
+                document.getElementById(`img-${id}`).src = processedUrl;
                 overlay.classList.add('hidden');
                 btnDownload.classList.remove('hidden');
                 
-                statusBadge.textContent = 'تم';
-                statusBadge.className = 'absolute top-2 right-2 px-2 py-1 rounded text-xs font-bold bg-green-500 text-white';
+                statusBadge.textContent = 'تم التفريغ';
+                statusBadge.className = 'absolute top-3 right-3 px-3 py-1 rounded-full text-xs font-bold bg-emerald-500 text-white shadow-md';
                 statusBadge.classList.remove('hidden');
 
             } catch (error) {
-                console.error("Error processing image:", error);
+                console.error("Processing Error:", error);
                 imgData.status = 'error';
-                
                 overlay.classList.add('hidden');
-                btnProcess.classList.remove('hidden'); // إتاحة المحاولة مرة أخرى
+                btnProcess.classList.remove('hidden');
                 
-                statusBadge.textContent = 'خطأ';
-                statusBadge.className = 'absolute top-2 right-2 px-2 py-1 rounded text-xs font-bold bg-red-500 text-white';
+                statusBadge.textContent = 'حدث خطأ';
+                statusBadge.className = 'absolute top-3 right-3 px-3 py-1 rounded-full text-xs font-bold bg-red-500 text-white shadow-md';
                 statusBadge.classList.remove('hidden');
             }
 
             updateUI();
         }
 
-        // --- معالجة كل الصور ---
         async function processAllImages() {
             if (isProcessing) return;
             isProcessing = true;
             updateUI();
 
             const pendingImages = imagesData.filter(img => img.status === 'pending' || img.status === 'error');
-            
             for (const img of pendingImages) {
                 await processSingleImage(img.id);
             }
@@ -415,79 +397,66 @@
             updateUI();
         }
 
-        // --- حذف صورة ---
         function removeImage(id) {
-            if(isProcessing) {
-                // منع الحذف أثناء معالجة الكل لتجنب المشاكل
-                const img = imagesData.find(i => i.id === id);
-                if(img && img.status === 'processing') return;
-            }
-
+            if (isProcessing && imagesData.find(i => i.id === id).status === 'processing') return;
             imagesData = imagesData.filter(img => img.id !== id);
-            const card = document.getElementById(`card-${id}`);
-            if (card) {
-                card.remove();
-            }
+            document.getElementById(`card-${id}`)?.remove();
             updateUI();
         }
 
-        // --- مسح كل الصور ---
-        function clearAll() {
-            if (isProcessing) return;
-            imagesData = [];
-            gallery.innerHTML = '';
-            updateUI();
-        }
-
-        // --- تحميل صورة واحدة ---
         function downloadSingleImage(id) {
-            const imgData = imagesData.find(img => img.id === id);
-            if (!imgData || imgData.status !== 'done') return;
-
+            const img = imagesData.find(i => i.id === id);
+            if (!img || img.status !== 'done') return;
+            
             const a = document.createElement('a');
-            a.href = imgData.processedUrl;
-            // تسمية الملف الجديد
-            const originalName = imgData.file.name;
+            a.href = img.processedUrl;
+            const originalName = img.file.name;
             const nameWithoutExt = originalName.substring(0, originalName.lastIndexOf('.')) || originalName;
-            a.download = `${nameWithoutExt}-no-bg.png`; // الحفظ دائماً كـ PNG للحفاظ على الشفافية
+            a.download = `${nameWithoutExt}-cleared.png`;
             document.body.appendChild(a);
             a.click();
             document.body.removeChild(a);
         }
 
-        // --- تحميل كل الصور كملف مضغوط (ZIP) ---
         async function downloadAll() {
             const doneImages = imagesData.filter(img => img.status === 'done');
             if (doneImages.length === 0) return;
 
             const zip = new JSZip();
-            
-            // تحويل كل رابط (Blob URL) إلى بيانات لإضافتها للـ ZIP
-            for (let i = 0; i < doneImages.length; i++) {
-                const img = doneImages[i];
+            for (const img of doneImages) {
                 try {
                     const response = await fetch(img.processedUrl);
                     const blob = await response.blob();
-                    
-                    const originalName = img.file.name;
-                    const nameWithoutExt = originalName.substring(0, originalName.lastIndexOf('.')) || originalName;
-                    const fileName = `${nameWithoutExt}-no-bg.png`;
-                    
-                    zip.file(fileName, blob);
-                } catch (err) {
-                    console.error("Failed to add file to zip:", err);
-                }
+                    const nameWithoutExt = img.file.name.substring(0, img.file.name.lastIndexOf('.')) || img.file.name;
+                    zip.file(`${nameWithoutExt}-cleared.png`, blob);
+                } catch (err) { console.error(err); }
             }
 
-            // توليد ملف الـ ZIP وتحميله
-            zip.generateAsync({type:"blob"}).then(function(content) {
-                saveAs(content, "images-no-bg.zip");
+            zip.generateAsync({type:"blob"}).then(content => {
+                saveAs(content, "images-cleared.zip");
             });
         }
 
-        // ربط الأزرار الرئيسية بالوظائف
+        // ربط أزرار المعالجة والتحميل الفردية باستخدام Event Delegation
+        gallery.addEventListener('click', (e) => {
+            const processBtn = e.target.closest('.btn-process');
+            if (processBtn) processSingleImage(processBtn.dataset.id);
+
+            const downloadBtn = e.target.closest('.btn-download');
+            if (downloadBtn) downloadSingleImage(downloadBtn.dataset.id);
+
+            const removeBtn = e.target.closest('.btn-remove');
+            if (removeBtn) removeImage(removeBtn.dataset.id);
+        });
+
+        // الأزرار الرئيسية
         processAllBtn.addEventListener('click', processAllImages);
-        clearAllBtn.addEventListener('click', clearAll);
+        clearAllBtn.addEventListener('click', () => {
+            if (isProcessing) return;
+            imagesData = [];
+            gallery.innerHTML = '';
+            updateUI();
+        });
         downloadAllBtn.addEventListener('click', downloadAll);
 
     </script>
