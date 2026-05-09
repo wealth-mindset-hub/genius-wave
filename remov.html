@@ -66,7 +66,6 @@
 
     <div class="max-w-6xl mx-auto bg-white rounded-3xl shadow-xl overflow-hidden border border-slate-100">
         
-        <!-- الهيدر -->
         <header class="bg-indigo-600 text-white p-8 text-center relative overflow-hidden">
             <div class="absolute inset-0 opacity-20 bg-[url('https://www.transparenttextures.com/patterns/cubes.png')]"></div>
             <div class="relative z-10">
@@ -77,7 +76,6 @@
 
         <div class="p-6 md:p-10">
             
-            <!-- اختيار جودة الموديل -->
             <div class="mb-8 flex flex-wrap gap-4 items-center bg-slate-50 p-5 rounded-2xl border border-slate-200 justify-center">
                 <label class="font-bold text-slate-700 flex items-center gap-2">
                     <i class="fa-solid fa-microchip text-indigo-500"></i> دقة المعالجة:
@@ -92,7 +90,7 @@
             <div id="model-loading" class="mb-8 p-6 bg-indigo-50 border border-indigo-100 rounded-2xl hidden flex-col gap-4 shadow-inner">
                 <div class="flex items-center gap-3 text-indigo-800 font-bold text-lg">
                     <div class="loader" style="width: 24px; height: 24px; border-width: 3px;"></div>
-                    <span>جاري الاتصال وتجهيز الذكاء الاصطناعي...</span>
+                    <span>جاري الاتصال وتجهيز الذكاء الاصطناعي (يحدث مرة واحدة فقط)...</span>
                 </div>
                 <div class="w-full bg-indigo-200 rounded-full h-4 overflow-hidden shadow-inner">
                     <div id="progress-bar-fill" class="bg-indigo-600 h-4 rounded-full transition-all duration-300 ease-out" style="width: 0%"></div>
@@ -100,7 +98,6 @@
                 <div id="loading-details" class="text-sm text-indigo-700 text-right font-medium">جاري التحضير...</div>
             </div>
 
-            <!-- منطقة الإسقاط ورفع الصور -->
             <div id="drop-area" class="drop-zone p-12 rounded-3xl text-center cursor-pointer bg-slate-50 hover:bg-slate-100 flex flex-col items-center justify-center gap-5 mb-10 border-2 border-dashed border-slate-300">
                 <div class="w-20 h-20 bg-indigo-100 rounded-full flex items-center justify-center mb-2">
                     <i class="fa-solid fa-cloud-arrow-up text-4xl text-indigo-600"></i>
@@ -114,7 +111,6 @@
                 </button>
             </div>
 
-            <!-- شريط الأدوات -->
             <div id="toolbar" class="flex flex-wrap justify-between items-center mb-8 hidden gap-4 p-5 bg-slate-50 rounded-2xl border border-slate-200 shadow-sm">
                 <div class="font-bold text-slate-700 text-lg">
                     <span id="total-count" class="bg-indigo-100 text-indigo-800 px-3 py-1 rounded-lg">0</span> صورة / صور
@@ -140,7 +136,6 @@
         </div>
     </div>
 
-    <!-- نافذة منبثقة مخصصة بديلة لـ alert -->
     <div id="custom-alert" class="fixed inset-0 bg-slate-900/60 hidden flex items-center justify-center z-50 backdrop-blur-sm transition-opacity">
         <div class="bg-white p-8 rounded-3xl shadow-2xl max-w-sm w-full text-center mx-4 transform transition-transform scale-100">
             <i class="fa-solid fa-circle-exclamation text-5xl text-rose-500 mb-5"></i>
@@ -151,16 +146,14 @@
     </div>
 
     <script type="module">
-        // استيراد مكتبة Transformers.js
         import { pipeline, env, RawImage } from 'https://cdn.jsdelivr.net/npm/@xenova/transformers@2.17.1';
 
-        // إعدادات المكتبة لتخطي أي مشاكل في الاستضافة
+        // إعدادات البيئة لضمان التوافق مع الاستضافات بدون أخطاء CORS
         env.allowLocalModels = false;
         env.useBrowserCache = true;
-        env.remoteHost = 'https://hf-mirror.com'; // السيرفر البديل السريع
+        // نستخدم السيرفر الرسمي الثابت الذي لا يتم حظره من المتصفحات
         env.backends.onnx.wasm.wasmPaths = 'https://cdn.jsdelivr.net/npm/@xenova/transformers@2.17.1/dist/';
 
-        // المتغيرات الأساسية
         const dropArea = document.getElementById('drop-area');
         const fileInput = document.getElementById('file-input');
         const gallery = document.getElementById('gallery');
@@ -179,16 +172,13 @@
         let currentLoadedModel = null;
         let isProcessing = false;
 
-        // دالة إظهار التنبيه
         function showAlert(message) {
             document.getElementById('alert-message').innerText = message;
             document.getElementById('custom-alert').classList.remove('hidden');
         }
 
-        // توليد معرف فريد
         const generateId = () => Math.random().toString(36).substr(2, 9);
 
-        // تحويل الملف لـ Data URL
         const readFileAsDataURL = (file) => {
             return new Promise((resolve, reject) => {
                 const reader = new FileReader();
@@ -198,11 +188,9 @@
             });
         };
 
-        // تحميل موديل الذكاء الاصطناعي
         async function loadModel() {
             const selectedModel = modelSelector.value;
             
-            // إذا كان الموديل محملاً بالفعل، لا نكرر التحميل
             if (segmenter && currentLoadedModel === selectedModel) return;
 
             modelLoadingDiv.classList.remove('hidden');
@@ -229,14 +217,13 @@
                 });
             } catch (error) {
                 console.error("Model Load Error:", error);
-                loadingDetails.innerText = `فشل التحميل بسبب انقطاع الاتصال.`;
-                showAlert("تعذر تحميل ملفات الذكاء الاصطناعي! يرجى التأكد من استقرار الإنترنت لديك. جرب فتح الصفحة في نافذة تصفح مخفي أو قم بتغيير الموديل.");
+                loadingDetails.innerText = `حدث خطأ أثناء الاتصال.`;
+                showAlert("تعذر تحميل ملفات الذكاء الاصطناعي بسبب ضعف أو حظر الاتصال. يرجى التأكد من استقرار الإنترنت وتحديث الصفحة.");
                 currentLoadedModel = null;
                 throw error;
             }
         }
 
-        // التعامل مع السحب والإفلات
         ['dragenter', 'dragover', 'dragleave', 'drop'].forEach(eventName => {
             dropArea.addEventListener(eventName, preventDefaults, false);
         });
@@ -267,7 +254,7 @@
         function handleFilesSelect(e) {
             const files = e.target.files;
             handleFiles(files);
-            fileInput.value = ''; // تفريغ لاختيار نفس الملف مجدداً
+            fileInput.value = '';
         }
 
         async function handleFiles(files) {
@@ -335,7 +322,6 @@
             imgData.element = card;
             gallery.appendChild(card);
 
-            // ربط الأزرار بعد إضافتها للـ DOM
             card.querySelector(`#btn-process-${imgData.id}`).addEventListener('click', () => processSingleImage(imgData.id));
             card.querySelector(`#btn-download-${imgData.id}`).addEventListener('click', () => downloadSingleImage(imgData.id));
             card.querySelector(`#btn-remove-${imgData.id}`).addEventListener('click', () => removeImage(imgData.id));
@@ -380,16 +366,11 @@
             btnProcess.classList.add('hidden');
             
             try {
-                // التأكد من تحميل الموديل أولاً
                 await loadModel();
 
-                // تحويل الصورة لمعالجة الذكاء الاصطناعي
                 const image = await RawImage.fromURL(imgData.originalUrl);
-                
-                // تشغيل الموديل لاستخراج القناع (Mask)
                 const result = await segmenter(image);
                 
-                // استخراج القناع (يتعامل مع مخرجات الموديلات المختلفة)
                 let mask;
                 if (Array.isArray(result)) {
                     mask = result.find(x => x.label === 'foreground' || x.label === 'LABEL_1')?.mask || result[0].mask;
@@ -397,30 +378,24 @@
                     mask = result; 
                 }
 
-                // إنشاء Canvas للرسم
                 const canvas = document.createElement('canvas');
                 canvas.width = image.width;
                 canvas.height = image.height;
                 const ctx = canvas.getContext('2d');
                 
-                // رسم الصورة الأصلية
                 const imgElement = new Image();
                 imgElement.src = imgData.originalUrl;
                 await new Promise(r => { imgElement.onload = r; });
                 ctx.drawImage(imgElement, 0, 0);
                 
-                // قراءة بيانات البكسل
                 const imageData = ctx.getImageData(0, 0, canvas.width, canvas.height);
                 
-                // تطبيق القناع بذكاء (جعل الخلفية شفافة)
                 if (mask.width === image.width && mask.height === image.height) {
-                    // الموديل أرجع قناع بنفس الحجم
                     for (let i = 0; i < mask.data.length; i++) {
-                        imageData.data[i * 4 + 3] = mask.data[i]; // تطبيق الشفافية
+                        imageData.data[i * 4 + 3] = mask.data[i];
                     }
                     ctx.putImageData(imageData, 0, 0);
                 } else {
-                    // في حالة كان القناع بحجم مختلف، يتم تكبيره بالـ Canvas
                     const maskCanvas = document.createElement('canvas');
                     maskCanvas.width = mask.width;
                     maskCanvas.height = mask.height;
@@ -439,7 +414,6 @@
                     ctx.globalCompositeOperation = 'source-over';
                 }
 
-                // تحويل النتيجة إلى صورة وعرضها
                 const processedUrl = await new Promise(resolve => canvas.toBlob(b => resolve(URL.createObjectURL(b)), 'image/png'));
                 
                 imgData.processedUrl = processedUrl;
@@ -547,16 +521,10 @@
             });
         }
 
+        // ربط الأزرار بالأحداث
         processAllBtn.addEventListener('click', processAllImages);
         clearAllBtn.addEventListener('click', clearAll);
         downloadAllBtn.addEventListener('click', downloadAll);
-
-        // عند تغيير الموديل من القائمة، نجبر الأداة على تحميله عند المعالجة القادمة
-        modelSelector.addEventListener('change', () => {
-            if (imagesData.length > 0) {
-                // اختياري: تنبيه المستخدم أن المعالجة القادمة ستسخدم الموديل الجديد
-            }
-        });
 
     </script>
 </body>
