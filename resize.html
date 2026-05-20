@@ -1,0 +1,384 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>أداة تغيير مقاس الصور</title>
+    <!-- تضمين مكتبة Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- تضمين مكتبة FontAwesome -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <!-- تضمين مكتبات التعامل مع الـ ZIP -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/FileSaver.js/2.0.5/FileSaver.min.js"></script>
+
+    <style>
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background-color: #f8fafc;
+        }
+        .drop-zone {
+            transition: all 0.3s ease;
+            border: 2px dashed #cbd5e1;
+        }
+        .drop-zone.dragover {
+            background-color: #e0e7ff;
+            border-color: #4f46e5;
+            transform: scale(1.02);
+        }
+        .image-card {
+            transition: transform 0.2s;
+        }
+        .image-card:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1);
+        }
+        /* إخفاء أسهم الأرقام في حقول الإدخال */
+        input[type=number]::-webkit-inner-spin-button, 
+        input[type=number]::-webkit-outer-spin-button { 
+            -webkit-appearance: none; 
+            margin: 0; 
+        }
+    </style>
+</head>
+<body class="min-h-screen p-4 md:p-8 text-slate-800">
+
+    <div class="max-w-6xl mx-auto bg-white rounded-3xl shadow-xl overflow-hidden border border-slate-100">
+        
+        <header class="bg-gradient-to-r from-indigo-600 to-violet-600 text-white p-8 text-center relative overflow-hidden">
+            <div class="absolute inset-0 opacity-10 bg-[url('https://www.transparenttextures.com/patterns/cubes.png')]"></div>
+            <div class="relative z-10">
+                <h1 class="text-4xl font-extrabold mb-3 tracking-tight"><i class="fa-solid fa-compress mr-2 text-indigo-200"></i> أداة تغيير مقاس الصور</h1>
+                <p class="text-indigo-100 text-lg">قم بتكبير أو تصغير صورك مع الحفاظ على الجودة بنقرة واحدة.</p>
+            </div>
+        </header>
+
+        <div class="p-6 md:p-10">
+            
+            <!-- لوحة التحكم في الأبعاد -->
+            <div class="bg-indigo-50 border border-indigo-100 rounded-2xl p-6 mb-8 shadow-sm">
+                <h3 class="text-lg font-bold text-indigo-900 mb-4 flex items-center gap-2">
+                    <i class="fa-solid fa-sliders"></i> إعدادات المقاس الجديد
+                </h3>
+                <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 items-end">
+                    
+                    <div>
+                        <label class="block text-sm font-semibold text-slate-700 mb-2">العرض (Width - px)</label>
+                        <input type="number" id="target-width" placeholder="مثال: 1080" class="w-full px-4 py-3 rounded-xl border border-slate-300 focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 outline-none transition text-left" dir="ltr">
+                    </div>
+                    
+                    <div>
+                        <label class="block text-sm font-semibold text-slate-700 mb-2">الارتفاع (Height - px)</label>
+                        <input type="number" id="target-height" placeholder="مثال: 1080" class="w-full px-4 py-3 rounded-xl border border-slate-300 focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 outline-none transition text-left" dir="ltr">
+                    </div>
+
+                    <div class="flex flex-col justify-center h-full">
+                        <label class="flex items-center gap-3 cursor-pointer p-3 bg-white rounded-xl border border-slate-200 shadow-sm hover:bg-slate-50 transition">
+                            <input type="checkbox" id="keep-aspect-ratio" checked class="w-5 h-5 text-indigo-600 rounded focus:ring-indigo-500 cursor-pointer">
+                            <span class="text-sm font-semibold text-slate-700 select-none">الحفاظ على نسبة الطول للعرض <i class="fa-solid fa-link text-indigo-400 ml-1"></i></span>
+                        </label>
+                    </div>
+
+                    <div>
+                        <label class="block text-sm font-semibold text-slate-700 mb-2">صيغة الحفظ</label>
+                        <select id="output-format" class="w-full px-4 py-3 rounded-xl border border-slate-300 focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 outline-none transition">
+                            <option value="image/jpeg">JPEG (أصغر حجماً)</option>
+                            <option value="image/png">PNG (دقة عالية)</option>
+                            <option value="image/webp">WEBP (حديث ومحسن)</option>
+                        </select>
+                    </div>
+
+                </div>
+            </div>
+
+            <div id="drop-area" class="drop-zone p-12 rounded-3xl text-center cursor-pointer bg-slate-50 hover:bg-slate-100 flex flex-col items-center justify-center gap-5 mb-10 border-2 border-dashed border-slate-300">
+                <div class="w-20 h-20 bg-indigo-100 rounded-full flex items-center justify-center mb-2">
+                    <i class="fa-solid fa-images text-4xl text-indigo-600"></i>
+                </div>
+                <h3 class="text-2xl font-bold text-slate-700">اسحب وأفلت الصور هنا</h3>
+                <p class="text-slate-500 text-lg">أو اضغط لاختيار الصور من جهازك</p>
+                <input type="file" id="file-input" multiple accept="image/*" class="hidden">
+                <button class="mt-4 px-8 py-3 bg-gradient-to-r from-indigo-500 to-indigo-600 text-white font-bold rounded-full hover:from-indigo-600 hover:to-indigo-700 hover:shadow-lg transition-all transform hover:-translate-y-1">
+                    تصفح الملفات
+                </button>
+            </div>
+
+            <div id="toolbar" class="flex flex-wrap justify-between items-center mb-8 hidden gap-4 p-5 bg-slate-50 rounded-2xl border border-slate-200 shadow-sm">
+                <div class="font-bold text-slate-700 text-lg">
+                    <span id="total-count" class="bg-indigo-100 text-indigo-800 px-3 py-1 rounded-lg">0</span> صورة
+                </div>
+                <div class="flex flex-wrap gap-3">
+                    <button id="process-all-btn" class="px-5 py-2.5 bg-indigo-600 text-white font-semibold rounded-xl hover:bg-indigo-700 transition flex items-center gap-2 shadow-sm">
+                        <i class="fa-solid fa-compress"></i> تغيير مقاس الكل
+                    </button>
+                    <button id="download-all-btn" class="px-5 py-2.5 bg-green-600 text-white font-semibold rounded-xl hover:bg-green-700 transition flex items-center gap-2 shadow-sm hidden">
+                        <i class="fa-solid fa-file-zipper"></i> تحميل الكل (ZIP)
+                    </button>
+                    <button id="clear-all-btn" class="px-5 py-2.5 bg-rose-100 text-rose-700 font-semibold rounded-xl hover:bg-rose-200 transition flex items-center gap-2">
+                        <i class="fa-solid fa-trash-can"></i> مسح الكل
+                    </button>
+                </div>
+            </div>
+
+            <div id="gallery" class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
+                <!-- الصور ستضاف هنا -->
+            </div>
+
+        </div>
+    </div>
+
+    <script>
+        const dropArea = document.getElementById('drop-area');
+        const fileInput = document.getElementById('file-input');
+        const gallery = document.getElementById('gallery');
+        const toolbar = document.getElementById('toolbar');
+        const totalCountSpan = document.getElementById('total-count');
+        const processAllBtn = document.getElementById('process-all-btn');
+        const clearAllBtn = document.getElementById('clear-all-btn');
+        const downloadAllBtn = document.getElementById('download-all-btn');
+        
+        const widthInput = document.getElementById('target-width');
+        const heightInput = document.getElementById('target-height');
+        const keepRatioCheckbox = document.getElementById('keep-aspect-ratio');
+        const formatSelect = document.getElementById('output-format');
+
+        let imagesData = [];
+        let originalAspectRatio = 1; // لحفظ نسبة العرض للارتفاع الافتراضية لأول صورة لتسهيل الإدخال
+
+        // ربط نسبة العرض للارتفاع في حقول الإدخال
+        widthInput.addEventListener('input', () => {
+            if (keepRatioCheckbox.checked && widthInput.value && originalAspectRatio) {
+                heightInput.value = Math.round(widthInput.value / originalAspectRatio);
+            }
+        });
+
+        heightInput.addEventListener('input', () => {
+            if (keepRatioCheckbox.checked && heightInput.value && originalAspectRatio) {
+                widthInput.value = Math.round(heightInput.value * originalAspectRatio);
+            }
+        });
+
+        // دوال التعامل مع السحب والإفلات
+        ['dragenter', 'dragover', 'dragleave', 'drop'].forEach(eventName => {
+            dropArea.addEventListener(eventName, e => { e.preventDefault(); e.stopPropagation(); }, false);
+        });
+
+        ['dragenter', 'dragover'].forEach(eventName => {
+            dropArea.addEventListener(eventName, () => dropArea.classList.add('dragover'), false);
+        });
+
+        ['dragleave', 'drop'].forEach(eventName => {
+            dropArea.addEventListener(eventName, () => dropArea.classList.remove('dragover'), false);
+        });
+
+        dropArea.addEventListener('drop', e => handleFiles(e.dataTransfer.files), false);
+        dropArea.addEventListener('click', () => fileInput.click());
+        fileInput.addEventListener('change', e => { handleFiles(e.target.files); fileInput.value = ''; });
+
+        function handleFiles(files) {
+            const imageFiles = Array.from(files).filter(file => file.type.startsWith('image/'));
+            if (imageFiles.length === 0) {
+                alert('الرجاء اختيار صور فقط.');
+                return;
+            }
+
+            Array.from(imageFiles).forEach(file => {
+                const reader = new FileReader();
+                reader.onload = (e) => {
+                    const id = Math.random().toString(36).substr(2, 9);
+                    
+                    // إنشاء كائن صورة للحصول على أبعادها الأصلية
+                    const img = new Image();
+                    img.onload = () => {
+                        const imgObj = {
+                            id: id,
+                            file: file,
+                            originalUrl: e.target.result,
+                            processedUrl: null,
+                            originalWidth: img.width,
+                            originalHeight: img.height,
+                            status: 'pending'
+                        };
+                        
+                        // تعيين أبعاد افتراضية في حقول الإدخال بناءً على أول صورة
+                        if (imagesData.length === 0) {
+                            widthInput.value = img.width;
+                            heightInput.value = img.height;
+                            originalAspectRatio = img.width / img.height;
+                        }
+
+                        imagesData.push(imgObj);
+                        createImageCard(imgObj);
+                        updateUI();
+                    };
+                    img.src = e.target.result;
+                };
+                reader.readAsDataURL(file);
+            });
+        }
+
+        function createImageCard(imgData) {
+            const card = document.createElement('div');
+            card.className = 'image-card bg-white border border-slate-200 rounded-2xl overflow-hidden flex flex-col';
+            card.id = `card-${imgData.id}`;
+
+            card.innerHTML = `
+                <div class="h-48 bg-slate-100 flex items-center justify-center p-2 relative overflow-hidden">
+                    <img src="${imgData.originalUrl}" class="max-w-full max-h-full object-contain" id="img-${imgData.id}">
+                    <div id="badge-${imgData.id}" class="absolute top-2 right-2 bg-slate-800 text-white text-xs px-2 py-1 rounded-md font-mono">
+                        ${imgData.originalWidth}x${imgData.originalHeight}
+                    </div>
+                </div>
+                <div class="p-4 bg-white border-t border-slate-100 mt-auto">
+                    <p class="text-sm text-slate-600 truncate mb-3 font-medium" dir="ltr" title="${imgData.file.name}">${imgData.file.name}</p>
+                    <div class="flex justify-between items-center">
+                        <button onclick="processSingle('${imgData.id}')" id="btn-process-${imgData.id}" class="px-4 py-2 bg-indigo-50 text-indigo-600 hover:bg-indigo-600 hover:text-white rounded-xl font-semibold transition text-sm">
+                            تغيير المقاس
+                        </button>
+                        <button onclick="downloadSingle('${imgData.id}')" id="btn-download-${imgData.id}" class="px-4 py-2 bg-green-50 text-green-600 hover:bg-green-600 hover:text-white rounded-xl font-semibold transition text-sm hidden">
+                            تحميل
+                        </button>
+                        <button onclick="removeImage('${imgData.id}')" class="p-2 text-rose-400 hover:bg-rose-50 hover:text-rose-600 rounded-xl transition">
+                            <i class="fa-solid fa-trash-can"></i>
+                        </button>
+                    </div>
+                </div>
+            `;
+            gallery.appendChild(card);
+        }
+
+        function updateUI() {
+            totalCountSpan.innerText = imagesData.length;
+            if (imagesData.length > 0) {
+                toolbar.classList.remove('hidden');
+                const allDone = imagesData.every(img => img.status === 'done');
+                if (allDone) {
+                    downloadAllBtn.classList.remove('hidden');
+                    processAllBtn.classList.add('hidden');
+                } else {
+                    downloadAllBtn.classList.add('hidden');
+                    processAllBtn.classList.remove('hidden');
+                }
+            } else {
+                toolbar.classList.add('hidden');
+                widthInput.value = '';
+                heightInput.value = '';
+            }
+        }
+
+        async function processSingle(id) {
+            const imgData = imagesData.find(i => i.id === id);
+            if (!imgData) return;
+
+            let targetW = parseInt(widthInput.value);
+            let targetH = parseInt(heightInput.value);
+
+            if (!targetW || !targetH) {
+                alert('الرجاء إدخال العرض والارتفاع أولاً.');
+                widthInput.focus();
+                return;
+            }
+
+            // إذا كان الحفاظ على الأبعاد مفعلاً ولكن يتم معالجة صورة مختلفة الأبعاد، نحسب ارتفاعها الخاص
+            if (keepRatioCheckbox.checked) {
+                const ratio = imgData.originalWidth / imgData.originalHeight;
+                targetH = Math.round(targetW / ratio);
+            }
+
+            return new Promise((resolve) => {
+                const img = new Image();
+                img.onload = () => {
+                    const canvas = document.createElement('canvas');
+                    canvas.width = targetW;
+                    canvas.height = targetH;
+                    const ctx = canvas.getContext('2d');
+                    
+                    // رسم الصورة بالأبعاد الجديدة
+                    ctx.drawImage(img, 0, 0, targetW, targetH);
+                    
+                    const format = formatSelect.value;
+                    const quality = format === 'image/jpeg' || format === 'image/webp' ? 0.9 : undefined;
+                    const resizedUrl = canvas.toDataURL(format, quality);
+
+                    imgData.processedUrl = resizedUrl;
+                    imgData.status = 'done';
+                    
+                    // تحديث الواجهة
+                    document.getElementById(`img-${id}`).src = resizedUrl;
+                    document.getElementById(`badge-${id}`).innerText = `${targetW}x${targetH}`;
+                    document.getElementById(`badge-${id}`).className = 'absolute top-2 right-2 bg-green-500 text-white text-xs px-2 py-1 rounded-md font-mono shadow-sm';
+                    document.getElementById(`btn-process-${id}`).classList.add('hidden');
+                    document.getElementById(`btn-download-${id}`).classList.remove('hidden');
+                    
+                    updateUI();
+                    resolve();
+                };
+                img.src = imgData.originalUrl;
+            });
+        }
+
+        async function processAllImages() {
+            if (!widthInput.value || !heightInput.value) {
+                alert('الرجاء إدخال العرض والارتفاع أولاً في لوحة التحكم.');
+                return;
+            }
+            
+            const pending = imagesData.filter(i => i.status !== 'done');
+            for (const img of pending) {
+                await processSingle(img.id);
+            }
+        }
+
+        function downloadSingle(id) {
+            const img = imagesData.find(i => i.id === id);
+            if (!img || !img.processedUrl) return;
+
+            const format = formatSelect.value.split('/')[1];
+            const a = document.createElement('a');
+            a.href = img.processedUrl;
+            
+            const nameWithoutExt = img.file.name.substring(0, img.file.name.lastIndexOf('.')) || img.file.name;
+            a.download = `${nameWithoutExt}-resized.${format}`;
+            document.body.appendChild(a);
+            a.click();
+            document.body.removeChild(a);
+        }
+
+        function removeImage(id) {
+            imagesData = imagesData.filter(i => i.id !== id);
+            document.getElementById(`card-${id}`).remove();
+            updateUI();
+        }
+
+        function clearAll() {
+            imagesData = [];
+            gallery.innerHTML = '';
+            updateUI();
+        }
+
+        async function downloadAll() {
+            const doneImages = imagesData.filter(img => img.status === 'done');
+            if (doneImages.length === 0) return;
+
+            const zip = new JSZip();
+            const format = formatSelect.value.split('/')[1];
+
+            doneImages.forEach(img => {
+                // استخراج الداتا الحقيقية من الرابط (إزالة data:image/png;base64,)
+                const data = img.processedUrl.split(',')[1];
+                const nameWithoutExt = img.file.name.substring(0, img.file.name.lastIndexOf('.')) || img.file.name;
+                zip.file(`${nameWithoutExt}-resized.${format}`, data, {base64: true});
+            });
+
+            zip.generateAsync({type:"blob"}).then(function(content) {
+                saveAs(content, "resized-images.zip");
+            });
+        }
+
+        processAllBtn.addEventListener('click', processAllImages);
+        clearAllBtn.addEventListener('click', clearAll);
+        downloadAllBtn.addEventListener('click', downloadAll);
+
+    </script>
+</body>
+</html>
